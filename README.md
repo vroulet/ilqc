@@ -5,7 +5,7 @@ This code provides an implementation of regularized discrete control algorithms 
 
 Those methods are developed in the paper:
 
-V. Roulet S. Srinivasa, D. Drusvyatskiy and Z. Harchaoui. Iterative Linearized Control: Stable Algorithms and Complexity Guarantees. Proceedings of the 36th International Conference on Machine Learning-Volume 72. 2019
+V. Roulet, D. Drusvyatskiy, S. Srinivasa and Z. Harchaoui. Iterative Linearized Control: Stable Algorithms and Complexity Guarantees. Proceedings of the 36th International Conference on Machine Learning-Volume 72. 2019
 
 If you use this code please cite the paper using the bibtex reference below.
 
@@ -13,8 +13,9 @@ If you use this code please cite the paper using the bibtex reference below.
 ```
 @article{roulet2019iterative,
   title={Iterative Linearized Control: Stable Algorithms and Complexity Guarantees},
-  author={Roulet, Vincent and Srinivasa, Siddharta and Drusvyatskiy, Dmitry and Harchaoui, Zaid},
-  journal={Proceedings of the 36th International Conference on Machine Learning-Volume 72},
+  author={Roulet, Vincent and Drusvyatskiy, Dmitry and Srinivasa, Siddharta and Harchaoui, Zaid},
+  journal={Proceedings of the 36th International Conference on Machine Learning},
+  volume={72},
   year={2019}
 }
 ```
