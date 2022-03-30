@@ -1,70 +1,113 @@
-Iterative Linear Quadratic Control Toolbox
-=============================================
+# Iterative Linear Quadratic Control Toolbox
+The goal of this toolbox is to analyze empirically the optimization performance of several algorithms for nonlinear
+ control from an optimization viewpoint on several synthetic benchmarks.
+ 
+A companion report [ilqc_algos](papers/ilqc_algos.pdf) is available and details the implementation of the algorithms
+ in a common differentiable programming framework. A theoretical analysis of the algorithms is presented in
+  [ilqc_theory](papers/ilqc_theory.pdf).
 
-This code provides an implementation of regularized discrete control algorithms on standard synthetic benchmarks implemented in PyTorch.
-
-Those methods are developed in the paper:
-
-V. Roulet, D. Drusvyatskiy, S. Srinivasa and Z. Harchaoui. Iterative Linearized Control: Stable Algorithms and Complexity Guarantees. Proceedings of the 36th International Conference on Machine Learning-Volume 72. 2019
-
-If you use this code please cite the paper using the bibtex reference below.
-
+If this software is useful for your research, please consider citing it as
 
 ```
-@article{roulet2019iterative,
-  title={Iterative Linearized Control: Stable Algorithms and Complexity Guarantees},
-  author={Roulet, Vincent and Drusvyatskiy, Dmitry and Srinivasa, Siddharta and Harchaoui, Zaid},
-  journal={Proceedings of the 36th International Conference on Machine Learning},
-  volume={72},
-  year={2019}
+@techreport{roulet2022iterative,
+author={Roulet, Vincent and Srinivasa, Siddhartha and Fazel, Maryam and Harchaoui, Zaid},
+title={Iterative Linear Quadratic Optimization for Nonlinear Control: Differentiable Programming Algorithmic Templates},
+institution={Department of Statistics, University of Washington}, 
+year={2022}
 }
 ```
+  
+## Introduction
+Consider controlling a system such as a car to make it perform a task such as racing a track in a finite time. The
+ movement of the system is generally determined by a *nonlinear* differential equation driven by a control input. To
+  determine an optimal control law for a given task determined by some costs, the system is usually discretized to
+   define an optimization problem in a sequence of control variables. The resulting optimization problem is generally
+    nonconvex, yet, experiments demonstrate that nonlinear control algorithms tailored for such problems can exhibit fast
+    convergence to reasonable or even optimal controllers. The objective of this toolbox is to study such phenomena.
+    
+#### Algorithms
+Algorithms for discretized nonlinear control problems exploit the dynamical structure of the problem to compute
+ candidate improved solutions at each step as detailed in [ilqc_algos](papers/ilqc_algos.pdf). These algorithms can
+  be classified depending on the approximations they used on the problem at each iteration: linear/quadratic
+   approximations of the dynamics, linear/quadratic approximations of the costs. The algorithms we consider in this
+    toolbox are
+- a *gradient descent* (linear approx. of the dynamics, linear approx. of the costs),
+- a *Gauss-Newton* method and its *Differentiable Dynamic Programming (DDP) variant* (linear approx. of the dynamics
+, quadratic approx. of the costs),
+- a *Newton method* and its *DDP variant* (quadratic approx. of the dynamics, quadratic approx. of the costs).
+   
+Furthermore, we consider several line-search strategies to update the current candidate solution (see [ilqc_algos
+](papers/ilqc_algos.pdf) for more details). 
 
-Introduction
------------------
-Given a robot whose dynamics are described by continuous mechanical equations, control problems aim to make the robot move to a given target position in a finite amount of time within a given precision. The user has access to some control variables that define the dynamics of the robot. We consider here the case where the whole trajectory must be controlled in advance i.e. in an open-loop setting.
+In addition to the implementation of the above algorithms for finite-horizon control, we implemented a model
+ predictive controller for autonomous car racing on different tracks. 
 
-In this setting, the dynamical continuous equations are discretized along time, which lead to a discrete control problem. The latter is composed of t steps of the dynamics where each step is parametrized by the current state and a control variable. The optimality of the whole set of control variables is measured by a cost on the trajectory it produces and some penalties on the choice of the control variables.
+#### Environments
+To study these algorithms we consider the task of swinging up a fixed pendulum or a pendulum on a cart and autonomous 
+car racing with either a simplified model of a car or a bicycle model of a car. The latter is a model developed by
+ [Liniger et al, 2017](https://arxiv.org/abs/1711.07300) by carefully studying the real dynamics of a miniature car, 
+ see e.g. this [video](https://www.youtube.com/watch?v=mXaElWYQKC4). We reimplemented these dynamics in Pytorch to
+  further study the numerical performance of optimization algorithms in realistic settings. 
+ 
+   
+## Installation
+To install the dependencies, create a conda environment with
+``conda env create -f ilqc.yml``
+Activate the environment, using
+``conda activate ilqc`` 
+and install pytorch (see https://pytorch.org/ to find the adequate command line for your OS); for example on mac, do
+``conda install pytorch -c pytorch``.
 
-From an optimization point of view, the problem is a composite optimization problem, where first order oracles are given by linearizing the dynamics at each step and solve the resulting subproblems. For more details and a mathematical presentation of the problem see the paper.
+## Case example
 
+#### Finite horizon control
+To optimize for example the racing of a simple model of a car on a simpe track create a python file in the repository
+ such as 
+ ```
+import torch
+from matplotlib import pyplot as plt
+from envs.car import Car
+from algorithms.run_min_algo import run_min_algo
 
-Examples
--------
-This code implements standard Iterative Linear Quadratic Regulator (ILQR), regularized ILQR and accelerated regularized ILQR on two standard benchmarks: the inverted pendulum and the two-links arm model. Complete formulations can be found in the paper. Each algorithm iteratively linearizes the dynamics along the current trajectory and solve the resulting linear quadratic control. Here the subproblems are solved using their dual formulation with a conjugate gradient that makes calls to the automatic-differentiation procedure of Pytorch.
+torch.set_default_tensor_type(torch.DoubleTensor)
 
-To run the inverted pendulum experiment for a discretization grid in time of length 100 with the objective of swinging up the pendulum, use from the main folder
+# Create nonlinear control task
+env = Car(model='simple', track='simple', cost='exact', reg_bar=0., horizon=50)
 
-`python exp_paper.py --ctrl_setting inverse_pendulum --horizon 100 --target_goal swing_up`
+# Optimize the task with a DDP algorithm using linear quadratic approximations
+cmd_opt, _, metrics = run_min_algo(env, algo='ddp_linquad_reg', max_iter=20)
 
-To run the two-links arm experiment for a discretization grid in time of length 100 with the objective of reaching a random target, use from the main folder
+# Visualize the movement
+env.visualize(cmd_opt)
 
-`python exp_paper.py --ctrl_setting two_links_arm --horizon 100 --target_goal cartesian_random_target`
+# Plot the costs along the iterations of the algorithm
+plt.plot(metrics['cost'])
+plt.show()
 
-A burning-phase of 5 iterations is done for for the regularized and accelerated regularized algorithms to get the best fixed step-sizes used for the remaining iterations. For ILQR a burning-phase is also performed for the initial step-size, a line-search is then performed at each step to get the next point following an Armijo rule.
+```
 
-Installation
------------------
-This code was written in Python 3.6 with PyTorch version 1.0.0. A conda environment file is provided in `ilqc.yml` and can be installed by using [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)
+A set of default experiments is present in `finite_horizon_control/fhc_example.py`. You can simply run the file from
+ the root of the repository using `python finite_horizon_control/fhc_example.py` to observe optimal controllers for
+  the tasks decribed above.
 
-The primary dependencies are pytorch, matplotlib, seaborn, pandas. The remainder of the dependencies are standard and e.g., come pre-installed with Anaconda. The code has not been tested on Windows operating systems.
+#### Model predictive control
+To observe a controller computed by a model predicitve control approach run `python model_predictive_control/mpc_example.py`.
 
-
-Contact
------------------
+## Reproducing experiments
+The experiments presented in [ilqc_algos](papers/ilqc_algos.pdf) can be reproduced by running `python
+ finite_horizon_control/compa_algos.py`. 
+ 
+## Contact
 You can report issues and ask questions in the repository's issues page. If you choose to send an email instead, please direct it to Vincent Roulet at vroulet@uw.edu and include [ilqc] in the subject line.
 
-Authors
------------------
+
+#### Authors
 [Vincent Roulet](http://faculty.washington.edu/vroulet/)  
-
-[Dmitriy Drusvyatskiy](https://sites.math.washington.edu/~ddrusv/)
-
-[Siddhartha Srinivasa](https://goodrobot.ai/)
-
+[Siddhartha Srinivasa](https://goodrobot.ai/)  
+[Maryam Fazel](https://people.ece.uw.edu/fazel_maryam/)  
 [Zaid Harchaoui](http://faculty.washington.edu/zaid/)  
 
 
-License
------------------
+#### License
 This code has a GPLv3 license.
+
