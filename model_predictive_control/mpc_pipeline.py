@@ -14,27 +14,24 @@ results_folder = os.path.join(results_folder, 'results')
 def mpc_step(env, full_horizon, overlap, max_iter=10, algo='ddp_linquad_reg', optim_on_full_window=False,
              keep_applying_last_ctrl=True, prev_cmd=None):
     curr_horizon = len(prev_cmd) if prev_cmd is not None else 0
-    partial_horizon = full_horizon - curr_horizon
-    init_cmd = torch.zeros(partial_horizon, env.dim_ctrl)
-    env.horizon = full_horizon if optim_on_full_window else partial_horizon
+    additional_time_steps = full_horizon - curr_horizon
 
     if prev_cmd is not None:
-        if optim_on_full_window:
-            if keep_applying_last_ctrl:
-                init_cmd = torch.cat((prev_cmd, prev_cmd[curr_horizon-partial_horizon:]))
-            else:
-                init_cmd = torch.cat((prev_cmd, init_cmd))
+        if keep_applying_last_ctrl:
+            additional_cmd = prev_cmd[-1].repeat(additional_time_steps, 1)
         else:
-            if keep_applying_last_ctrl:
-                init_cmd = torch.cat((prev_cmd[curr_horizon - overlap:], prev_cmd[curr_horizon-partial_horizon:]))
-            else:
-                init_cmd = torch.cat((prev_cmd[curr_horizon - overlap:], init_cmd))
-
+            additional_cmd = torch.zeros(additional_time_steps, env.dim_ctrl)
+        if optim_on_full_window:
+            init_cmd = torch.cat((prev_cmd, additional_cmd))
+        else:
+            init_cmd = torch.cat((prev_cmd[curr_horizon - overlap:], additional_cmd))
             traj, _ = env.roll_out_cmd(prev_cmd)
             env.init_state = traj[curr_horizon - overlap].data
             env.init_time_iter = curr_horizon - overlap
 
-    cmd, _, metrics = run_min_algo(env, max_iter, algo, prev_cmd=init_cmd)
+        cmd, _, metrics = run_min_algo(env, max_iter, algo, prev_cmd=init_cmd)
+    else:
+        cmd, _, metrics = run_min_algo(env, max_iter, algo)
 
     if prev_cmd is None or optim_on_full_window:
         cmd_opt = cmd.data

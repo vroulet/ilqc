@@ -156,7 +156,7 @@ class Car(DiffEnv):
         if type(self.reg_ctrl) == tuple:
             if self.discretization in ['euler', 'RK4_cst_ctrl']:
                 a, delta, atref = ctrl
-                cost_ctrl = self.reg_ctrl[0]*(a**2 +delta**2) + self.reg_ctrl[1]*atref**2
+                cost_ctrl = self.reg_ctrl[0]*(a**2 + delta**2) + self.reg_ctrl[1]*atref**2
             elif self.discretization == 'RK4':
                 accs, deltas, atrefs = ctrl[::3], ctrl[1::3], ctrl[2::3]
                 cost_ctrl = self.reg_ctrl[0]*((accs**2).sum() + (deltas**2).sum()) \

@@ -83,12 +83,12 @@ def compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis, approx, v
             compa_optim = compa_optim[compa_optim['iteration']>=start_iter_plot]
             compa_optim = compa_optim[compa_optim['iteration']<=max_iter_plot]
 
-            sns.lineplot(x=x_axis, y='cost', hue='algo', style='algo',
-                         markers=marker_styles, dashes=False, palette=palette, data=compa_optim, ax=ax)
+            sns.lineplot(x=x_axis, y='cost', hue='algo', style='algo',  data=compa_optim, ax=ax,
+                         markers=marker_styles, dashes=False, palette=palette, markevery=5)
             ax.set_title(rf'$\tau={horizon}$')
             ax.set(yscale='log')
 
-    format_plot(fig, x_axis, 'stepsize', n_rows, n_cols)
+    format_plot(fig, x_axis, 'cost', n_rows, n_cols)
     plt.show()
 
     # fig.savefig(os.path.join(plots_folder, '_'.join([approx, x_axis, 'cost']) + '.pdf'),
@@ -129,8 +129,8 @@ def stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter, approx, va
 
                 compa_optim = compa_algos(env_cfg, optim_cfgs, 'iteration', 'stepsize', scale=False)
 
-                ax = sns.lineplot(x='iteration', y='stepsize', hue='algo', style='algo',
-                                  markers=marker_styles, dashes=False, palette=palette, data=compa_optim, ax=ax)
+                ax = sns.lineplot(x='iteration', y='stepsize', hue='algo', style='algo', data=compa_optim, ax=ax,
+                                  markers=marker_styles, dashes=False, palette=palette, markevery=5)
                 ax.set_title(rf'$\tau={horizon}$')
                 if logscale:
                     ax.set(yscale='log')
@@ -184,31 +184,10 @@ def plot_stepsize_strategies(algo_type, approx):
                          f'stepsize_strat_{algo_type}_{approx}', var_plot_style=True)
 
 
-def list_algos_to_run():
-    horizons = [25, 50, 100]
-
-    env_cfgs = [dict(env='pendulum', dt=2./horizon, horizon=horizon) for horizon in horizons]
-    env_cfgs = env_cfgs + [dict(env='simple_car', track='simple', cost='exact', discretization='euler', reg_bar=0.,
-                                dt=2./horizon, horizon=horizon) for horizon in horizons]
-    env_cfgs = env_cfgs + [dict(env='real_car', track='simple', cost='contouring', discretization='rk4_cst_ctrl',
-                                dt=1./horizon, horizon=horizon) for horizon in horizons]
-    max_iter = 50
-    algos = ['gd']
-    algos = algos + [algo_type + '_' + approx + '_' + step_mode
-                     for algo_type in ['classic', 'ddp']
-                     for approx in ['linquad', 'quad']
-                     for step_mode in ['reg', 'dir']]
-    optim_cfgs = [dict(max_iter=max_iter, algo=algo) for algo in algos]
-
-    exp_cfgs = [dict(env_cfg=env_cfg, optim_cfg=optim_cfg) for env_cfg in env_cfgs for optim_cfg in optim_cfgs]
-    return exp_cfgs
-
-
-
 if __name__ == '__main__':
-    plot_compa_algos_envs('linquad')
+    # plot_compa_algos_envs('linquad')
     # plot_stepsize_behavior('linquad')
-    # plot_compa_algos_envs('quad')
+    plot_compa_algos_envs('quad')
     # plot_stepsize_behavior('quad')
     # plot_stepsize_strategies('classic', 'linquad')
 

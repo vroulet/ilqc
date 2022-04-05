@@ -144,11 +144,11 @@ def bactrack_line_search(func, var, oracle, stepsize, decrease_fac):
 
     if diff_var is None:
         decrease = False
-        stop = np.abs(stepsize) < 1e-20
+        stop = np.abs(stepsize) < 1e-32
     else:
         new_val = func(var + diff_var)
         decrease = dir * (new_val - (curr_val + dec_obj)) < 0
-        stop = torch.norm(diff_var) < 1e-12
+        stop = torch.norm(diff_var) < 1e-32
 
     while not decrease and not stop:
         stepsize *= decrease_fac
@@ -156,11 +156,11 @@ def bactrack_line_search(func, var, oracle, stepsize, decrease_fac):
 
         if diff_var is None:
             decrease = False
-            stop = np.abs(stepsize) < 1e-20
+            stop = np.abs(stepsize) < 1e-32
         else:
             new_val = func(var + diff_var)
             decrease = dir * (new_val - (curr_val + dec_obj)) < 0
-            stop = torch.norm(diff_var) < 1e-12
+            stop = torch.norm(diff_var) < 1e-32
 
     if stop:
         print('line-search failed')
