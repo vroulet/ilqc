@@ -20,10 +20,10 @@ def run_min_algo(env, max_iter=10, algo='ddp_linquad_reg', stepsize=None, obj='n
         stepsize = default_stepsize if stepsize is None else stepsize
 
     if past_metrics is None:
-        traj, costs = env.roll_out_cmd(cmd, approx=approx)
+        traj, costs = env.forward(cmd, approx=approx)
         metrics, iteration = collect_info(None, env, cmd, costs, obj, 0, stepsize, algo, 0.), 0
     else:
-        traj, costs = env.roll_out_cmd(cmd, approx=approx)
+        traj, costs = env.forward(cmd, approx=approx)
         metrics, iteration = past_metrics, past_metrics['iteration'][-1]
     status = check_cvg_status(metrics)
 
@@ -52,7 +52,7 @@ def collect_info(metrics, env, cmd, costs, obj, iteration, stepsize, algo, time_
         if step_mode == 'reg' and iteration > 0:
             stepsize = (stepsize * metrics['norm_grad_obj'][-1]).item()
     else:
-        _, costs = env.roll_out_cmd(cmd)
+        _, costs = env.forward(cmd)
         norm_grad_obj = torch.norm(torch.autograd.grad(sum(costs), cmd)[0])
 
     info_step = dict(iteration=iteration, time=cumul_time + time_iter, cost=cost.item(),

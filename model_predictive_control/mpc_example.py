@@ -2,6 +2,8 @@ import sys
 import torch
 from matplotlib import pyplot as plt
 
+import envs.car
+
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 sys.path.append('..')
@@ -18,9 +20,9 @@ def simple_track_example():
     cmd_mpc = run_mpc(env_cfg, optim_cfg_mpc)
 
     env = make_env(env_cfg)
-    traj, costs = env.roll_out_cmd(cmd_mpc)
-    fig, ax = env.plot_track()
-    env.plot_traj(traj, fig, ax)
+    traj, costs = env.forward(cmd_mpc)
+    fig, ax = envs.car.plot_track()
+    envs.car.plot_traj(traj, fig, ax)
     plt.show()
     env.visualize(cmd_mpc)
 
@@ -32,9 +34,9 @@ def complex_track_example():
     cmd_mpc = run_mpc(env_cfg, optim_cfg_mpc)
 
     env = make_env(env_cfg)
-    traj, costs = env.roll_out_cmd(cmd_mpc)
-    fig, ax = env.plot_track()
-    env.plot_traj(traj, fig, ax)
+    traj, costs = env.forward(cmd_mpc)
+    fig, ax = envs.car.plot_track()
+    envs.car.plot_traj(traj, fig, ax)
     plt.show()
     env.visualize(cmd_mpc)
 

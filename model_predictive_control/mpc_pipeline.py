@@ -25,7 +25,7 @@ def mpc_step(env, full_horizon, overlap, max_iter=10, algo='ddp_linquad_reg', op
             init_cmd = torch.cat((prev_cmd, additional_cmd))
         else:
             init_cmd = torch.cat((prev_cmd[curr_horizon - overlap:], additional_cmd))
-            traj, _ = env.roll_out_cmd(prev_cmd)
+            traj, _ = env.forward(prev_cmd)
             env.init_state = traj[curr_horizon - overlap].data
             env.init_time_iter = curr_horizon - overlap
 

@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 
 
@@ -12,6 +11,15 @@ def auto_multi_grad(output, input, create_graph=False):
     jac = torch.stack([torch.autograd.grad(output, input, output_coord, retain_graph=True, create_graph=create_graph)[0]
                        for output_coord in output_basis])
     return jac.t()
+
+
+def auto_multi_hess(output, input):
+    if output.grad_fn is None:
+        hess = torch.zeros(input.shape[0], output.shape[0], output.shape[1])
+    else:
+        hess = torch.stack([auto_multi_grad(output_coord, input) for output_coord in output])
+        hess = torch.transpose(hess, 0, 1)
+    return hess
 
 
 def define_smooth_relu(eps):
@@ -38,25 +46,5 @@ def smooth_min(x, a):
     return -smooth_relu(-x + a) + a
 
 
-def auto_multi_hess(output, input):
-    if output.grad_fn is None:
-        hess = torch.zeros(input.shape[0], output.shape[0], output.shape[1])
-    else:
-        hess = torch.stack([auto_multi_grad(output_coord, input) for output_coord in output])
-        hess = torch.transpose(hess, 0, 1)
-    return hess
 
-
-if __name__ == '__main__':
-    def f(x):
-        return 0.5*x**2
-    x = torch.rand(5, requires_grad=True)
-    fx = f(x)[:3]
-    grad = auto_multi_grad(fx, x, create_graph=True)
-    hess = auto_multi_hess(grad, x)
-    print(x)
-    print(grad)
-    print(hess)
-    print(hess.shape)
-    print(hess.matmul(torch.ones(3)))
 

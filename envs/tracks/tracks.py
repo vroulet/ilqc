@@ -2,22 +2,29 @@ import math
 import numpy as np
 import os
 import pandas as pd
-import json
 import torch
-from envs.utils.torch_spline import natural_cubic_spline_coeffs, NaturalCubicSpline
+from envs.tracks.torch_spline import natural_cubic_spline_coeffs, NaturalCubicSpline
 
 
-def get_track(track):
+def get_track(track: str) -> (NaturalCubicSpline, NaturalCubicSpline, NaturalCubicSpline):
     """
     Select track among: a line, a bend, a simple track or a complex track
     (complex track from [Optimization-Based Autonomous Racing of 143 Scale RC Cars, Liniger et al 2017])
-    :param track: (string) choice of the track in ['line', 'bend', 'simple', complex']
-    :param scale: (boolean) scale the track such that it is in approx. [-5, 5]
-    :param loop: (boolean) if True, the index
-    :return: spline: (NaturalCubicSpline) a spline that approximates the track
+    Returns three splines one for the center, one for the inner border, one for the outer border of the track
+    The splines are encoded as NaturalCubicSpline (from Patrick Ridge,
+    https://github.com/patrick-kidger/torchcubicspline). The spliens are functions of time, which given a continuous
+    time t outputs the corresponding point on the track.
+    :param track: choice of the track in ['line', 'bend', 'circle', 'simple', complex']
+    :return:
+        - center: a spline that approximates the center of the track
+        - inner: a spline that approximates the inner border of the track
+        - outer: a spline that approximates the outer border of the track
     """
-    dir_name = os.path.dirname(os.path.abspath(__file__))
-    track_data = pd.read_json(os.path.join(dir_name, track + "_track.json"))
+    tracks_folder = os.path.dirname(os.path.abspath(__file__))
+    track_file = os.path.join(tracks_folder, track + "_track.json")
+    if not os.path.exists(track_file):
+        make_track(track)
+    track_data = pd.read_json(os.path.join(tracks_folder, track + "_track.json"))
 
     time = None
     lines = []
@@ -43,27 +50,21 @@ def get_track(track):
     return center, inner, outer
 
 
-def make_track_from_np_array(center_track, name_track, border_length, nb_points):
-    l = border_length
-    time = np.sqrt(np.sum(np.diff(center_track, axis=0) ** 2, axis=1))
-    time = np.insert(time, 0, 0).cumsum()
-    time, center_track = torch.from_numpy(time), torch.from_numpy(center_track)
-    coeffs = natural_cubic_spline_coeffs(time, center_track)
-    spline = NaturalCubicSpline(coeffs)
-
-    time = torch.linspace(0, max(spline._t), nb_points)
-    center_track = spline.evaluate(time)
-    dtrack = spline.derivative(time)
-
-    vs = torch.sqrt(torch.sum(dtrack**2, dim=1))
-    normals = torch.tensor([[dpos[1]/v, -dpos[0]/v] for dpos, v in zip(dtrack, vs)])
-    inner_border = center_track - l/2*normals
-    outer_border = center_track + l/2*normals
-
-    track = np.concatenate((center_track.numpy(), inner_border.numpy(), outer_border.numpy()), axis=1)
-    dir_name = os.path.dirname(os.path.abspath(__file__))
-    pd.DataFrame(track, columns=['X', 'Y', 'X_i', 'Y_i', 'X_o', 'Y_o']).to_json(os.path.join(dir_name, name_track)
-                                                                                + '.json', orient='columns', indent=1)
+def make_track(track):
+    if track == 'line':
+        make_line()
+    elif track == 'bend':
+        make_bend()
+    elif track == 'circle':
+        make_circle()
+    elif track == 'simple':
+        make_simple_track()
+    elif track == 'complex':
+        # The coordinates of the complex track have already been recorded and are taken from
+        # [Optimization-Based Autonomous Racing of 143 Scale RC Cars, Liniger et al 2017]
+        pass
+    else:
+        raise NotImplementedError
 
 
 def make_line(border_length=0.37, nb_points=100):
@@ -97,9 +98,6 @@ def make_bend(border_length=0.37, nb_points=100):
     cx = cx + [cx[-1] for t in range(1, short + 1)]
     cy = cy + [cy[-1] + t for t in range(1, short + 1)]
 
-    # x_center = np.array([0.0, 50, 60.0, 70.0, 80.0, 90.0, 100.0])
-    # y_center = np.array([0.0, 0.0, 2., 8., 18., 32., 50.])
-    # center_track = np.stack((x_center, y_center)).transpose()/172
     center_track = np.array([cx, cy]).transpose()/172
 
     make_track_from_np_array(center_track, 'bend_track', border_length, nb_points)
@@ -172,39 +170,35 @@ def make_simple_track(border_length=0.37, nb_points=100):
     make_track_from_np_array(center_track, 'simple_track', border_length, nb_points)
 
 
+def make_track_from_np_array(center_track: np.ndarray, name_track: str, border_length: float, nb_points: int) -> None:
+    """
+    Given a list of points recorded in a numpy array create the spline corresponding to this track and record
+    nb_points of this spline as the definition of this track, the resulting file is saved for further use
+    :param center_track: array
+    :param name_track: Name of the track to be saved
+    :param border_length: width of the track
+    :param nb_points: number of points used to define the spline. More points give a more precise curve
+                      but slow down the computations
 
+    """
+    l = border_length
+    time = np.sqrt(np.sum(np.diff(center_track, axis=0) ** 2, axis=1))
+    time = np.insert(time, 0, 0).cumsum()
+    time, center_track = torch.from_numpy(time), torch.from_numpy(center_track)
+    coeffs = natural_cubic_spline_coeffs(time, center_track)
+    spline = NaturalCubicSpline(coeffs)
 
+    time = torch.linspace(0, max(spline._t), nb_points)
+    center_track = spline.evaluate(time)
+    dtrack = spline.derivative(time)
 
-# dir_name = os.path.dirname(os.path.abspath(__file__))
-# tracks_data = pd.read_json(os.path.join(dir_name, "simple_track.json"))
-# time = None
-# tracks = []
-# for coord in ['', 'i', 'o']:
-#     track = tracks_data[['X' + coord, 'Y' + coord]].to_numpy(dtype=float)
-#     track = torch.from_numpy(track)
-#     if time is None:
-#         time = np.sqrt(np.sum(np.diff(track, axis=0) ** 2, axis=1))
-#         time = np.insert(time, 0, 0).cumsum()
-#         time = torch.from_numpy(time)
-#     coeffs = natural_cubic_spline_coeffs(time, track)
-#     track = NaturalCubicSpline(coeffs)
-#     tracks.append(track)
-# center, inner, outer = tracks
-#
-# from matplotlib import pyplot as plt
-# s = torch.linspace(0, max(center._t), 1000)
-# plt.figure()
-# track_plots = []
-# for track in [center, inner, outer]:
-#     track_plot = track.evaluate(s)
-#     track_plots.append(track_plot)
-#     plt.plot(track_plot[:, 0], track_plot[:, 1], 'k-')
-# plt.title('Track')
-# plt.show()
-# plt.figure()
-# center_track = track_plots[0]
-# for track_plot in track_plots[1:]:
-#     dist_tracks = [torch.norm(a-b)-5 for a, b in zip(center_track, track_plot)]
-#     plt.plot(dist_tracks)
-#     print(sum(dist_tracks))
-#     plt.show()
+    vs = torch.sqrt(torch.sum(dtrack**2, dim=1))
+    normals = torch.tensor([[dpos[1]/v, -dpos[0]/v] for dpos, v in zip(dtrack, vs)])
+    inner_border = center_track - l/2*normals
+    outer_border = center_track + l/2*normals
+
+    track = np.concatenate((center_track.numpy(), inner_border.numpy(), outer_border.numpy()), axis=1)
+    tracks_folder = os.path.dirname(os.path.abspath(__file__))
+    pd.DataFrame(track, columns=['X', 'Y', 'X_i', 'Y_i', 'X_o', 'Y_o']).to_json(os.path.join(tracks_folder, name_track)
+                                                                                + '.json', orient='columns', indent=1)
+

@@ -101,7 +101,7 @@ def min_step(env, traj, costs, cmd, stepsize, line_search, algo, handle_bad_dir)
             raise NotImplementedError
 
     def obj(cmd):
-        traj, costs = env.roll_out_cmd(cmd)
+        traj, costs = env.forward(cmd)
         return sum(costs)
 
     if line_search:
@@ -130,7 +130,7 @@ def min_step(env, traj, costs, cmd, stepsize, line_search, algo, handle_bad_dir)
         diff_cmd, _ = oracle(stepsize)
     if diff_cmd is not None:
         next_cmd = cmd + diff_cmd
-        traj, costs = env.roll_out_cmd(next_cmd, approx=approx)
+        traj, costs = env.forward(next_cmd, approx=approx)
     else:
         next_cmd = traj = costs = None
     return next_cmd, traj, costs, stepsize

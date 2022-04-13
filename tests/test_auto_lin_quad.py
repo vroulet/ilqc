@@ -1,12 +1,11 @@
 from copy import deepcopy
 
 import torch
-import numpy as np
 
 from envs.rollout import roll_out_lin
 from envs.backward import lin_quad_backward
 from envs.lin_quad import LinQuadEnv, compute_lin_quad_approx, make_synth_linear_env, DiffEnv
-from envs.utils.torch_utils import auto_multi_grad
+from envs.torch_utils import auto_multi_grad
 
 torch.set_default_tensor_type(torch.DoubleTensor)
 torch.manual_seed(1)
@@ -25,7 +24,7 @@ def test_lqr(lin_quad_env: LinQuadEnv, reg_ctrl: float = 0.) -> None:
 
     cmd0 = torch.rand(horizon, dim_ctrl, requires_grad=True)
 
-    traj, costs = lin_quad_env.roll_out_cmd(cmd0, approx='linquad')
+    traj, costs = lin_quad_env.forward(cmd0, approx='linquad')
     total_cost0 = sum(costs)
     grad = torch.autograd.grad(total_cost0, cmd0, retain_graph=True)[0]
 
@@ -67,7 +66,7 @@ def direct_newton(env: DiffEnv, cmd: torch.Tensor, reg_ctrl: float = 0.) -> (tor
     cmd_flat.requires_grad = True
     cmd_aux = cmd_flat.view(horizon, dim_ctr)
 
-    traj, costs = env.roll_out_cmd(cmd_aux, approx='linquad')
+    traj, costs = env.forward(cmd_aux, approx='linquad')
     total_cost = sum(costs)
     feasible = True
 
@@ -79,14 +78,14 @@ def direct_newton(env: DiffEnv, cmd: torch.Tensor, reg_ctrl: float = 0.) -> (tor
         cmd_opt_newton = - torch.solve(grad.unsqueeze(-1), hess)[0].view(-1)
         cmd_opt_newton = cmd_opt_newton.view(horizon, dim_ctr)
 
-        traj, costs = env.roll_out_cmd(cmd_aux, approx='linquad')
+        traj, costs = env.forward(cmd_aux, approx='linquad')
         lin_dyn_states, lin_dyn_ctrls, \
         quad_cost_states, lin_cost_states, \
         quad_cost_ctrls, lin_cost_ctrls = compute_lin_quad_approx(traj, costs, reg_ctrl)
         lin_quad_env = LinQuadEnv(lin_dyn_states, lin_dyn_ctrls,
                                   quad_cost_states, lin_cost_states,
                                   quad_cost_ctrls, lin_cost_ctrls)
-        traj_opt, costs_opt = lin_quad_env.roll_out_cmd(cmd_opt_newton)
+        traj_opt, costs_opt = lin_quad_env.forward(cmd_opt_newton)
         opt_newton = sum(costs_opt)
     else:
         cmd_opt_newton = None

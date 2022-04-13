@@ -6,7 +6,6 @@ torch.set_default_tensor_type(torch.DoubleTensor)
 sys.path.append('..')
 sys.path.append('.')
 
-
 from envs.pendulum import Pendulum, CartPendulum
 from envs.car import Car
 from algorithms.run_min_algo import run_min_algo
@@ -17,9 +16,7 @@ def recorded_example(exp='pendulum'):
     if exp == 'pendulum':
         env_cfg = dict(env='pendulum', horizon=40, stay_put_time=1.)
     elif exp == 'cart_pendulum':
-        # env_cfg = dict(env='cart_pendulum', discretization='rk4', horizon=50, stay_put_time=0.5,
-        #         #                x_limits=(-4.,4.), dt=0.1)
-        env_cfg = dict(env='cart_pendulum', horizon=100, stay_put_time=0.2, x_limits=(-2., 2.), dt=0.1)
+        env_cfg = dict(env='cart_pendulum', horizon=50, stay_put_time=0.6, x_limits=(-2., 2.), dt=0.05)
     elif exp == 'simple_car':
         env_cfg = dict(env='simple_car', discretization='rk4_cst_ctrl', cost='exact', reg_bar=0.,
                        track='simple', horizon=50)
@@ -38,7 +35,7 @@ def plain_example(exp='pendulum'):
     if exp == 'pendulum':
         env = Pendulum(horizon=40, stay_put_time=1.)
     elif exp == 'cart_pendulum':
-        env = CartPendulum(horizon=200, stay_put_time=0.2, x_limits=(-2., 2.))
+        env = CartPendulum(horizon=50, stay_put_time=0.6, x_limits=(-2., 2.), dt=0.05)
     elif exp == 'simple_car':
         env = Car(model='simple', discretization='rk4_cst_ctrl', cost='exact', reg_bar=0.,
                   track='simple', horizon=50)
@@ -52,10 +49,7 @@ def plain_example(exp='pendulum'):
 
 if __name__ == '__main__':
     for exp in ['pendulum', 'cart_pendulum', 'simple_car', 'real_car']:
-        recorded_example(exp)
+        plain_example(exp)
 
-    # env = Pendulum(horizon=40)
-    # cmd_opt, _, _ = run_min_algo(env, algo='ddp_linquad_reg', max_iter=20)
-    # env.visualize(cmd_opt)
 
 

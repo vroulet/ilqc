@@ -1,20 +1,21 @@
 import torch
 from matplotlib import pyplot as plt
-from envs.utils.tracks import get_track, make_line, make_bend, make_circle, make_simple_track
-from envs.utils.car_visualization import plot_track
+from envs.tracks.tracks import get_track, make_line, make_bend, make_circle, make_simple_track
+from envs.car import plot_track
 from copy import deepcopy
 
+# Create tracks as json files recorded to be loaded when needed
 make_line()
 make_bend()
 make_circle()
 make_simple_track()
 
-# Get a spline approx. of the track
+# Get a spline approx. of a simple track
 center, inner, outer = get_track('simple')
 fig, axs = plot_track(center, inner, outer)
 plt.show()
 
-# Plot distance ot inner border
+# Plot distance to inner border
 fig, ax = plt.subplots()
 time = torch.linspace(0, 1 * max(center._t), 500)
 

@@ -3,7 +3,8 @@ import numpy as np
 import torch
 from envs.forward import DiffEnv
 from envs.discretization import euler, runge_kutta4, runge_kutta4_cst_ctrl
-from envs.utils.torch_utils import smooth_relu
+from envs.torch_utils import smooth_relu
+from envs import rendering
 
 
 class Pendulum(DiffEnv):
@@ -59,7 +60,6 @@ class Pendulum(DiffEnv):
         return self.state
 
     def set_viewer(self):
-        from gym.envs.classic_control import rendering
         l = 2 * self.l
         self.viewer = rendering.Viewer(500, 500)
         self.viewer.set_bounds(-1.5 * l, 1.5 * l, -1.5 * l, 1.5 * l)
@@ -69,12 +69,12 @@ class Pendulum(DiffEnv):
         rod.add_attr(self.pole_transform)
         self.viewer.add_geom(rod)
 
-    def render(self, mode='human'):
+    def render(self, title=None):
         if self.viewer is None:
             self.set_viewer()
         np_state = self.state.numpy()
         self.pole_transform.set_rotation(np_state[0] + np.pi/2)
-        return self.viewer.render(return_rgb_array=mode == 'rgb_array')
+        return self.viewer.render(title=title)
 
 
 class CartPendulum(DiffEnv):
@@ -157,7 +157,6 @@ class CartPendulum(DiffEnv):
         return cost_state
 
     def set_viewer(self):
-        from gym.envs.classic_control import rendering
         self.viewer = rendering.Viewer(500, 500)
         l = 2 * self.l
         if self.x_limits is not None:
@@ -181,7 +180,7 @@ class CartPendulum(DiffEnv):
 
         self.viewer.add_geom(rod)
 
-    def render(self, mode='human'):
+    def render(self, title=None):
         if self.viewer is None:
             self.set_viewer()
         np_state = self.state.numpy()
@@ -189,7 +188,7 @@ class CartPendulum(DiffEnv):
         self.pole_transform.set_translation(np_state[0], 0)
         self.pole_transform.set_rotation(np_state[1] - np.pi/2)
 
-        return self.viewer.render(return_rgb_array=mode == 'rgb_array')
+        return self.viewer.render(title=title)
 
 
 

@@ -1,21 +1,23 @@
 import torch
 import time
 from torch.autograd import grad as auto_grad
-import gym
-from envs.utils.torch_utils import auto_multi_grad
+from envs.torch_utils import auto_multi_grad
 
 
-class DiffEnv(gym.Env):
+class DiffEnv:
     """
     Super class that takes an environment whose dynamics/costs are coded in Pytorch
     and outputs an environment that can handle second order oracles with quadratic approximations
+
+    Note: all environments assume decomposable costs in state and control variables, i.e.,
+    costs of the form h(x, u) = h(x) + h(u) for x the state and u the control
     """
     def __init__(self):
         super(DiffEnv, self).__init__()
-        self.dim_ctrl = self.dim_state = None
-        self.state, self.time_iter, self.horizon = None, 0, None
-        self.dt = None
-        self.init_state = self.init_time_iter = None
+        self.dim_ctrl, self.dim_state = None, None
+        self.dt, self.horizon = None, None
+        self.state, self.time_iter = None, 0
+        self.init_state, self.init_time_iter = None, None
         self.viewer = None
 
     def discrete_dyn(self, state, ctrl, time_iter):
@@ -44,7 +46,7 @@ class DiffEnv(gym.Env):
         self.state, self.time_iter = next_state, new_time_iter
         return next_state, cost
 
-    def roll_out_cmd(self, cmd, approx=None, reset=True):
+    def forward(self, cmd, approx=None, reset=True):
         if reset:
             self.reset(requires_grad=approx is not None)
         dim_state, dim_ctrl, horizon = self.dim_state, self.dim_ctrl, cmd.shape[0]
@@ -79,6 +81,9 @@ class DiffEnv(gym.Env):
             time.sleep(dt)
             self.step(ctrl)
         self.close()
+
+    def render(self, title=None):
+        raise NotImplementedError
 
 
 def diff_discrete_dyn(discrete_dyn, state, ctrl, time_iter, quad_approx=False):

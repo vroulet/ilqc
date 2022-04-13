@@ -6,8 +6,10 @@
 # distributed under different terms and without source code.
 
 import math
+import numpy as np
 import torch
-from envs.utils.torch_utils import smooth_min
+from envs.torch_utils import smooth_min
+
 
 def _validate_input(t, X):
     if not t.is_floating_point():
@@ -307,10 +309,6 @@ class NaturalCubicSpline:
         inner = 2 * self._c[..., index, :] + 3 * self._d[..., index, :] * fractional_part
         deriv = self._b[..., index, :] + inner * fractional_part
         return deriv
-
-
-import numpy as np
-import torch
 
 
 def cheap_stack(tensors, dim):
