@@ -185,7 +185,7 @@ def plot_stepsize_strategies(algo_type, approx):
 
 
 if __name__ == '__main__':
-    # plot_compa_algos_envs('linquad')
+    plot_compa_algos_envs('linquad')
     # plot_stepsize_behavior('linquad')
     plot_compa_algos_envs('quad')
     # plot_stepsize_behavior('quad')

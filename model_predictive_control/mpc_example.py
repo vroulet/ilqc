@@ -21,8 +21,8 @@ def simple_track_example():
 
     env = make_env(env_cfg)
     traj, costs = env.forward(cmd_mpc)
-    fig, ax = envs.car.plot_track()
-    envs.car.plot_traj(traj, fig, ax)
+    fig, ax = env.plot_track()
+    env.plot_traj(traj, fig, ax)
     plt.show()
     env.visualize(cmd_mpc)
 
@@ -35,8 +35,8 @@ def complex_track_example():
 
     env = make_env(env_cfg)
     traj, costs = env.forward(cmd_mpc)
-    fig, ax = envs.car.plot_track()
-    envs.car.plot_traj(traj, fig, ax)
+    fig, ax = env.plot_track()
+    env.plot_traj(traj, fig, ax)
     plt.show()
     env.visualize(cmd_mpc)
 
