@@ -49,7 +49,7 @@ def plain_example(exp='pendulum'):
 
 if __name__ == '__main__':
     for exp in ['pendulum', 'cart_pendulum', 'simple_car', 'real_car']:
-        plain_example(exp)
+        recorded_example(exp)
 
 
 

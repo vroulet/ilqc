@@ -5,7 +5,6 @@ def auto_multi_grad(output, input, create_graph=False):
     """
     Compute gradient (i.e. the transpose of the jacobian) of a multidimensional function given by output on input
     """
-    # todo change it into autograd that computes classical gradient
     # if the output is a scalar or gradient of a multivariate function if the output is a function
     output_basis = torch.eye(len(output))
     jac = torch.stack([torch.autograd.grad(output, input, output_coord, retain_graph=True, create_graph=create_graph)[0]

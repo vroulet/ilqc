@@ -42,6 +42,6 @@ def complex_track_example():
 
 
 if __name__ == '__main__':
-    # simple_track_example()
+    simple_track_example()
     complex_track_example()
 

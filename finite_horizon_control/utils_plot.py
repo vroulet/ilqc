@@ -19,7 +19,9 @@ def set_plt_params():
 
 def get_nice_writing():
     nice_writing = dict(iteration='Iterations', cost='Cost', stepsize='Stepsize', time='Time',
-                        pendulum='Swinging up Pendulum', simple_car='Simple Model of Car with Tracking Cost',
+                        pendulum='Swinging up Pendulum',
+                        cart_pendulum='Swinging up Pendulum on a Cart',
+                        simple_car='Simple Model of Car with Tracking Cost',
                         real_car='Bicycle Model of Car with Contouring Cost',
                         gd='GD'
                         )

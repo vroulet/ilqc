@@ -1,9 +1,14 @@
-from envs.car import Car
+from envs.car import Car, DiffEnv
 from envs.lin_quad import make_synth_linear_env
 from envs.pendulum import Pendulum, CartPendulum
 
 
-def make_env(env_cfg):
+def make_env(env_cfg: dict) -> DiffEnv:
+    """
+    Create environment given a dictionary of inputs given in env_cfg
+    :param env_cfg:  dictionary of inputs specifying the environment and its parameters
+    :return: the created environment
+    """
     env = env_cfg['env']
     env_opts = {k: env_cfg[k] for k in set(list(env_cfg.keys())) - {'env'}}
     if env == 'pendulum':

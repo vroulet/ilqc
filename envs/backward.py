@@ -1,7 +1,10 @@
+from typing import List
 import torch
 
 
-def lin_quad_backward(traj, costs, reg_ctrl=0., reg_state=0., handle_bad_dir='flag', var='ctrl'):
+def lin_quad_backward(traj: List[torch.Tensor], costs: List[torch.Tensor],
+                      reg_ctrl: float = 0., reg_state: float = 0.,
+                      handle_bad_dir: str = 'flag'):
     horizon = len(traj)-1
     J, j, jcst = costs[-1].hess_state, costs[-1].grad_state, 0.
     J = J + reg_state * torch.eye(J.shape[0])
@@ -15,11 +18,8 @@ def lin_quad_backward(traj, costs, reg_ctrl=0., reg_state=0., handle_bad_dir='fl
         P = P + reg_state * torch.eye(P.shape[0])
         Q = Q + reg_ctrl * torch.eye(Q.shape[0])
 
-        if var == 'ctrl':
-            J, j, jcst, K, k, feasible = bell_step(A, B, J, j, jcst, P, p, Q, q, handle_bad_dir=handle_bad_dir)
-            gain = dict(gain_ctrl=K, offset_ctrl=k)
-        else:
-            raise NotImplementedError
+        J, j, jcst, K, k, feasible = bell_step(A, B, J, j, jcst, P, p, Q, q, handle_bad_dir=handle_bad_dir)
+        gain = dict(gain_ctrl=K, offset_ctrl=k)
         gains.insert(0, gain)
         if not feasible:
             break

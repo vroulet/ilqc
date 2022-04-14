@@ -149,18 +149,3 @@ def erase_entry(exp_cfg: dict, path: str)-> None:
             entries.pop(i)
     with open(path, 'wb') as file:
         save(entries, file)
-
-
-# def summarize_entries(path, results_name):
-#     # todo: test!
-#     _, load, _ = set_save_load_procedure()
-#     results_folder = os.path.dirname(path)
-#     with open(path, 'rb') as file:
-#         entries = load(file)
-#     grid_search_records = results_folder + f'/{results_name}_records.txt'
-#     to_write = ''
-#     for entry in entries:
-#         to_write = '\n'.join(['{0}:{1}'.format(key, value) for key, value in entry['exp_cfg'].items()]) + '\n'
-#         to_write += f'{results_name} ' + str(entry['results']) + '\n\n'
-#     with open(grid_search_records, 'w') as file:
-#         file.write(to_write)

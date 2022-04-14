@@ -51,15 +51,17 @@ def compa_algos(env_cfg, optim_cfgs, x_axis, y_axis, scale=True,
     return compa_optim
 
 
-def compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis, approx, var_plot_style=False):
-    # plots_folder = '/Users/vincentroulet/Dropbox/Postdoc/ilqc/tech_report/fig'
+total_times = dict(pendulum=2., cart_pendulum=2.5, simple_car=2., real_car=1.)
+
+
+def compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis, var_plot_style=False):
     nice_writing = get_nice_writing()
     set_plt_params()
     palette, marker_styles = get_palette_line_styles() if not var_plot_style else get_var_palette_line_styles()
     start_iter_plot, max_iter_plot = 0, max_iter - 5
 
     n_rows, n_cols = len(env_cfgs), len(horizons)
-    fig, big_axes = plt.subplots(figsize=(20, 24), nrows=n_rows, ncols=1, sharey=True)
+    fig, big_axes = plt.subplots(figsize=(20, 28), nrows=n_rows, ncols=1, sharey=True)
     for row, big_ax in enumerate(big_axes, start=1):
         env_cfg = env_cfgs[row-1]
         big_ax.set_title(nice_writing[env_cfg['env']], fontsize=36, y=1.15)
@@ -69,7 +71,7 @@ def compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis, approx, v
     for i, env_cfg in enumerate(env_cfgs):
         algos_compared = deepcopy(algos)
 
-        total_time = 1. if env_cfg['env'] == 'real_car' else 2.
+        total_time = total_times[env_cfg['env']]
         if env_cfg['env'] == 'real_car' and 'gd' in algos:
             algos_compared.remove('gd')
 
@@ -91,13 +93,9 @@ def compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis, approx, v
     format_plot(fig, x_axis, 'cost', n_rows, n_cols)
     plt.show()
 
-    # fig.savefig(os.path.join(plots_folder, '_'.join([approx, x_axis, 'cost']) + '.pdf'),
-    #             bbox_inches='tight', format='pdf')
 
-
-def stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter, approx, var_plot_style=False):
+def stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter, var_plot_style=False):
     assert 'gd' not in algotype_approxs
-    # plots_folder = '/Users/vincentroulet/Dropbox/Postdoc/ilqc/tech_report/fig'
     nice_writing = get_nice_writing()
     set_plt_params()
     palette, marker_styles = get_palette_line_styles() if not var_plot_style else get_var_palette_line_styles()
@@ -105,7 +103,7 @@ def stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter, approx, va
     stepsize_modes = ['dir', 'reg']
     n_rows_fig, n_rows_per_fig = len(env_cfgs), len(stepsize_modes)
     n_rows, n_cols = n_rows_fig*n_rows_per_fig, len(horizons)
-    fig, big_axes = plt.subplots(figsize=(20, 25), nrows=n_rows, ncols=1, sharey=True)
+    fig, big_axes = plt.subplots(figsize=(20, 28), nrows=n_rows, ncols=1, sharey=True)
 
     for row, big_ax in enumerate(big_axes, start=1):
         if row % len(stepsize_modes) == 1:
@@ -115,17 +113,17 @@ def stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter, approx, va
         big_ax._frameon = False
 
     for i, env_cfg in enumerate(env_cfgs):
-        total_time = 1. if env_cfg['env'] == 'real_car' else 2.
+        total_time = total_times[env_cfg['env']]
 
         for k, stepsize_mode in enumerate(stepsize_modes):
             algos = [algo_type_approx + '_' + stepsize_mode for algo_type_approx in algotype_approxs]
             logscale = stepsize_mode == 'reg'
             for j, horizon in enumerate(horizons):
                 ax = fig.add_subplot(n_rows, n_cols, i*n_cols*n_rows_per_fig + k*n_cols + j + 1)
-                dt = total_time / horizon
-                env_cfg.update(dt=dt)
 
-                optim_cfgs = [dict(max_iter=max_iter, algo=algo, horizon=horizon) for algo in algos]
+                env_cfg.update(dt=total_time/horizon, horizon=horizon)
+
+                optim_cfgs = [dict(max_iter=max_iter, algo=algo) for algo in algos]
 
                 compa_optim = compa_algos(env_cfg, optim_cfgs, 'iteration', 'stepsize', scale=False)
 
@@ -137,9 +135,6 @@ def stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter, approx, va
     format_plot(fig, 'iteration', 'stepsize', n_rows, n_cols)
     plt.show()
 
-    # fig.savefig(os.path.join(plots_folder, '_'.join([approx, 'stepsize']) + '.pdf'),
-    #             bbox_inches='tight', format='pdf')
-
 
 def plot_compa_algos_envs(approx):
     algos = ['gd'] if approx == 'linquad' else []
@@ -147,13 +142,14 @@ def plot_compa_algos_envs(approx):
                      for algo_type in ['classic', 'ddp'] for step_mode in ['reg', 'dir']]
     env_cfgs = [
         dict(env='pendulum'),
+        dict(env='cart_pendulum', x_limits=(-2., 2.), stay_put_time=0.6),
         dict(env='simple_car', track='simple', cost='exact', discretization='euler', reg_bar=0.),
         dict(env='real_car', track='simple', cost='contouring', discretization='rk4_cst_ctrl')
     ]
     max_iter = 50
     horizons = [25, 50, 100]
     for x_axis in ['iteration', 'time']:
-        compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis, approx)
+        compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis)
 
 
 def plot_stepsize_behavior(approx):
@@ -165,7 +161,7 @@ def plot_stepsize_behavior(approx):
 
     max_iter = 50
     horizons = [25, 50, 100]
-    stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter, approx)
+    stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter)
 
 
 def plot_stepsize_strategies(algo_type, approx):
@@ -173,6 +169,7 @@ def plot_stepsize_strategies(algo_type, approx):
              for stepsize_mode in ['dir', 'dirvar', 'reg', 'regvar']]
     env_cfgs = [
         dict(env='pendulum'),
+        dict(env='cart_pendulum', x_limits=(-2., 2.), stay_put_time=0.6),
         dict(env='simple_car', track='simple', cost='exact', discretization='euler', reg_bar=0.),
         dict(env='real_car', track='simple', cost='contouring', discretization='rk4_cst_ctrl')
     ]
@@ -180,14 +177,13 @@ def plot_stepsize_strategies(algo_type, approx):
     max_iter = 50
     horizons = [25, 50, 100]
     for x_axis in ['iteration', 'time']:
-        compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis,
-                         f'stepsize_strat_{algo_type}_{approx}', var_plot_style=True)
+        compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis, var_plot_style=True)
 
 
 if __name__ == '__main__':
     plot_compa_algos_envs('linquad')
-    # plot_stepsize_behavior('linquad')
+    plot_stepsize_behavior('linquad')
     plot_compa_algos_envs('quad')
-    # plot_stepsize_behavior('quad')
+    plot_stepsize_behavior('quad')
     # plot_stepsize_strategies('classic', 'linquad')
 
