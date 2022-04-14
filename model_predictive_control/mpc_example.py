@@ -2,8 +2,6 @@ import sys
 import torch
 from matplotlib import pyplot as plt
 
-import envs.car
-
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 sys.path.append('..')

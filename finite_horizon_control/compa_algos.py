@@ -1,5 +1,6 @@
 import sys
 import torch
+import os
 from pandas import DataFrame
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -61,7 +62,7 @@ def compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis, var_plot_
     start_iter_plot, max_iter_plot = 0, max_iter - 5
 
     n_rows, n_cols = len(env_cfgs), len(horizons)
-    fig, big_axes = plt.subplots(figsize=(20, 28), nrows=n_rows, ncols=1, sharey=True)
+    fig, big_axes = plt.subplots(figsize=(20, 24), nrows=n_rows, ncols=1, sharey=True)
     for row, big_ax in enumerate(big_axes, start=1):
         env_cfg = env_cfgs[row-1]
         big_ax.set_title(nice_writing[env_cfg['env']], fontsize=36, y=1.15)
@@ -91,7 +92,7 @@ def compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis, var_plot_
             ax.set(yscale='log')
 
     format_plot(fig, x_axis, 'cost', n_rows, n_cols)
-    plt.show()
+    return fig
 
 
 def stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter, var_plot_style=False):
@@ -103,7 +104,7 @@ def stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter, var_plot_s
     stepsize_modes = ['dir', 'reg']
     n_rows_fig, n_rows_per_fig = len(env_cfgs), len(stepsize_modes)
     n_rows, n_cols = n_rows_fig*n_rows_per_fig, len(horizons)
-    fig, big_axes = plt.subplots(figsize=(20, 28), nrows=n_rows, ncols=1, sharey=True)
+    fig, big_axes = plt.subplots(figsize=(20, 24), nrows=n_rows, ncols=1, sharey=True)
 
     for row, big_ax in enumerate(big_axes, start=1):
         if row % len(stepsize_modes) == 1:
@@ -133,7 +134,7 @@ def stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter, var_plot_s
                 if logscale:
                     ax.set(yscale='log')
     format_plot(fig, 'iteration', 'stepsize', n_rows, n_cols)
-    plt.show()
+    return fig
 
 
 def plot_compa_algos_envs(approx):
@@ -142,14 +143,18 @@ def plot_compa_algos_envs(approx):
                      for algo_type in ['classic', 'ddp'] for step_mode in ['reg', 'dir']]
     env_cfgs = [
         dict(env='pendulum'),
-        dict(env='cart_pendulum', x_limits=(-2., 2.), stay_put_time=0.6),
+        # dict(env='cart_pendulum', x_limits=(-2., 2.), stay_put_time=0.6),
         dict(env='simple_car', track='simple', cost='exact', discretization='euler', reg_bar=0.),
         dict(env='real_car', track='simple', cost='contouring', discretization='rk4_cst_ctrl')
     ]
     max_iter = 50
     horizons = [25, 50, 100]
+    plots_folder = os.path.dirname(os.path.abspath(__file__))
     for x_axis in ['iteration', 'time']:
-        compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis)
+        fig = compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis)
+        fig.savefig(os.path.join(plots_folder, '_'.join([approx, x_axis])) + '.pdf',
+                    # bbox_inches='tight',
+                    format='pdf')
 
 
 def plot_stepsize_behavior(approx):
@@ -161,7 +166,11 @@ def plot_stepsize_behavior(approx):
 
     max_iter = 50
     horizons = [25, 50, 100]
-    stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter)
+    fig = stepsize_analysis(env_cfgs, algotype_approxs, horizons, max_iter)
+    plots_folder = os.path.dirname(os.path.abspath(__file__))
+    fig.savefig(os.path.join(plots_folder, '_'.join([approx, 'stepsize'])) + '.pdf',
+                # bbox_inches='tight',
+                format='pdf')
 
 
 def plot_stepsize_strategies(algo_type, approx):
@@ -169,7 +178,7 @@ def plot_stepsize_strategies(algo_type, approx):
              for stepsize_mode in ['dir', 'dirvar', 'reg', 'regvar']]
     env_cfgs = [
         dict(env='pendulum'),
-        dict(env='cart_pendulum', x_limits=(-2., 2.), stay_put_time=0.6),
+        # dict(env='cart_pendulum', x_limits=(-2., 2.), stay_put_time=0.6),
         dict(env='simple_car', track='simple', cost='exact', discretization='euler', reg_bar=0.),
         dict(env='real_car', track='simple', cost='contouring', discretization='rk4_cst_ctrl')
     ]
@@ -177,7 +186,7 @@ def plot_stepsize_strategies(algo_type, approx):
     max_iter = 50
     horizons = [25, 50, 100]
     for x_axis in ['iteration', 'time']:
-        compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis, var_plot_style=True)
+        fig = compa_conv_algos_envs(env_cfgs, algos, horizons, max_iter, x_axis, var_plot_style=True)
 
 
 if __name__ == '__main__':

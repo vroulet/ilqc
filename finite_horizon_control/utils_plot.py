@@ -6,7 +6,7 @@ import colorsys
 
 def set_plt_params():
     params = {'axes.labelsize': 28,
-              'font.size': 28,
+              'font.size': 26,
               'legend.fontsize': 24,
               'xtick.labelsize': 28,
               'ytick.labelsize': 28,

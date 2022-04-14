@@ -3,7 +3,7 @@ The goal of this toolbox is to analyze empirically the optimization performance 
  control from an optimization viewpoint on several synthetic benchmarks.
  
 A companion report [ilqc_algos](papers/ilqc_algos.pdf) is available and details the implementation of the algorithms
- in a common differentiable programming framework. A theoretical analysis of the algorithms is presented in
+ in a common differentiable programming framework. A theoretical analysis of the algorithms is presented in the paper
   [ilqc_theory](papers/ilqc_theory.pdf).
 
 If this software is useful for your research, please consider citing it as
@@ -55,7 +55,7 @@ To install the dependencies, create a conda environment with
 ``conda env create -f ilqc.yml``
 Activate the environment, using
 ``conda activate ilqc`` 
-and install pytorch (see https://pytorch.org/ to find the adequate command line for your OS); for example on mac, do
+and install pytorch (see https://pytorch.org/ to find the adequate command line for your OS); for example on a mac, do
 ``conda install pytorch -c pytorch``.
 
 ## Case example
@@ -65,6 +65,7 @@ To optimize for example the racing of a simple model of a car on a simpe track c
  such as 
  ```
 import torch
+import seaborn as sns
 from matplotlib import pyplot as plt
 from envs.car import Car
 from algorithms.run_min_algo import run_min_algo
@@ -81,7 +82,7 @@ cmd_opt, _, metrics = run_min_algo(env, algo='ddp_linquad_reg', max_iter=20)
 env.visualize(cmd_opt)
 
 # Plot the costs along the iterations of the algorithm
-plt.plot(metrics['cost'])
+sns.lineplot(x='iteration', y='cost', data=metrics)
 plt.show()
 
 ```
@@ -95,7 +96,8 @@ To observe a controller computed by a model predicitve control approach run `pyt
 
 ## Reproducing experiments
 The experiments presented in [ilqc_algos](papers/ilqc_algos.pdf) can be reproduced by running `python
- finite_horizon_control/compa_algos.py`. 
+ finite_horizon_control/compa_algos.py`. Output figures are saved in the folder `finite_horizon_control`. For ease of
+  test, the results have been saved in advance. If you prefer to rerun all experiments simply erase the folder results. 
  
 ## Contact
 You can report issues and ask questions in the repository's issues page. If you choose to send an email instead, please direct it to Vincent Roulet at vroulet@uw.edu and include [ilqc] in the subject line.

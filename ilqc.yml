@@ -8,4 +8,3 @@ dependencies:
   - matplotlib
   - seaborn
   - pyglet
-  - gym
