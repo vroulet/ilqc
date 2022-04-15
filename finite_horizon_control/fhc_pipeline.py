@@ -20,7 +20,7 @@ def solve_ctrl_pb(env_cfg, optim_cfg, prev_cmd=None, optim_aux_vars=None, past_m
 
 
 def check_exp_done(exp_outputs):
-    return check_cvg_status(exp_outputs['metrics']) != 'running'
+    return check_cvg_status(exp_outputs['metrics'], verbose=False) != 'running'
 
 
 output_to_input = dict(cmd_opt='prev_cmd', optim_aux_vars='optim_aux_vars', metrics='past_metrics')

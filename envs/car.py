@@ -37,7 +37,7 @@ class Car(DiffEnv):
         self.vref, self.constrain_angle, self.acc_bounds = vref, constrain_angle, acc_bounds
 
         # cost parameters
-        self.reg_ctrl, self.reg_cont, self.reg_lag, self.reg_speed, self.reg_barr, self.reg_obs = \
+        self.reg_ctrl, self.reg_cont, self.reg_lag, self.reg_speed, self.reg_bar, self.reg_obs = \
             reg_ctrl, reg_cont, reg_lag, reg_speed, reg_bar, reg_obs
         self.cost_type, self.time_penalty = cost, time_penalty
 
@@ -193,11 +193,11 @@ class Car(DiffEnv):
             if i == 0:
                 # inner
                 barr_next_state = barr_next_state \
-                                  + self.reg_barr * smooth_relu(carwidth / 2 - (point - border_point).dot(normal)) ** 2
+                                  + self.reg_bar * smooth_relu(carwidth / 2 - (point - border_point).dot(normal)) ** 2
             else:
                 # outer
                 barr_next_state = barr_next_state \
-                                  + self.reg_barr * smooth_relu((point - border_point).dot(normal) + carwidth / 2) ** 2
+                                  + self.reg_bar * smooth_relu((point - border_point).dot(normal) + carwidth / 2) ** 2
         barr_next_state = barr_next_state
 
         if self.reg_obs > 0.:

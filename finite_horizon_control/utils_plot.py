@@ -23,7 +23,7 @@ def get_nice_writing():
                         cart_pendulum='Swinging up Pendulum on a Cart',
                         simple_car='Simple Model of Car with Tracking Cost',
                         real_car='Bicycle Model of Car with Contouring Cost',
-                        gd='GD'
+                        gd='GD',
                         )
     algo_names = dict(classic_linquad='GN', classic_quad='NE', ddp_linquad='DDP-LQ', ddp_quad='DDP-Q')
     step_mode_names = dict(dir='dir', reg='reg', dirvar='dir var', regvar='reg var')
@@ -122,8 +122,20 @@ def format_plot(fig, add_legend):
     fig.tight_layout()
 
 
-
-
-
+def plot_conv_costs(info_exps, start_plot_after=0):
+    nice_writing = get_nice_writing()
+    fig = plt.figure()
+    if start_plot_after > 0:
+        info_exps = info_exps[info_exps['iteration'] >= start_plot_after]
+    x_axis = 'iteration'
+    y_axis = 'cost'
+    ax = sns.lineplot(x='iteration', y='cost', hue='algo', data=info_exps)
+    handles, labels = ax.get_legend_handles_labels()
+    for i in range(len(labels)):
+        labels[i] = nice_writing[labels[i]]
+    ax.legend(handles=handles, labels=labels)
+    ax.set_xlabel(nice_writing[x_axis])
+    ax.set_ylabel(nice_writing[y_axis])
+    return fig
 
 

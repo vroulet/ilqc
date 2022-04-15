@@ -30,7 +30,6 @@ def run_and_record_exp_wrapper(run_exp: Callable, output_to_input: dict,
     @wraps(run_exp)
     def run_and_record_exp(*cfgs, **exp_cfg):
         exp_cfg = seq_or_keyword_args(run_exp, cfgs, exp_cfg)
-        print(*['{0}:{1}'.format(key, value) for key, value in exp_cfg.items()], sep='\n')
         # List are reserved for grid-searches, so if a parameter of the configuration is made of several values,
         # use rather sets
         assert not any([isinstance(value, list) for cfg in exp_cfg.values() for value in cfg.values()])
@@ -43,6 +42,7 @@ def run_and_record_exp_wrapper(run_exp: Callable, output_to_input: dict,
                 exp_outputs = run_exp(**exp_cfg)
             else:
                 new_inputs = {val: exp_outputs[key] for key, val in output_to_input.items()}
+                print(*['{0}:{1}'.format(key, value) for key, value in exp_cfg.items()], sep='\n')
                 exp_outputs = run_exp(**exp_cfg, **new_inputs)
             save_exp(exp_cfg, exp_outputs, results_folder)
         return exp_outputs

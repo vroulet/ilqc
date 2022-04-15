@@ -94,6 +94,11 @@ A set of default experiments is present in `finite_horizon_control/fhc_example.p
 #### Model predictive control
 To observe a controller computed by a model predicitve control approach run `python model_predictive_control/mpc_example.py`.
 
+## Tutorials
+A set of notebooks is avaialble to describe the models considered for modeling autonomous car racing with different
+ nonlinear control algorithms in `ilqc.ipynb`. To run them, simply type jupyter notebook from the root of the folder
+  after having activated the environment.
+
 ## Reproducing experiments
 The experiments presented in [ilqc_algos](papers/ilqc_algos.pdf) can be reproduced by running `python
  finite_horizon_control/compa_algos.py`. Output figures are saved in the folder `finite_horizon_control`. For ease of
