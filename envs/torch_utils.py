@@ -1,18 +1,29 @@
+from typing import Callable
 import torch
 
 
-def auto_multi_grad(output, input, create_graph=False):
+def auto_multi_grad(output: torch.Tensor, input: torch.Tensor, create_graph: bool = False) -> torch.Tensor:
     """
-    Compute gradient (i.e. the transpose of the jacobian) of a multidimensional function given by output on input
+    Compute transpose of the Jacobian of a multivariate function that outputed output for a given input
+    :param output: output of the function
+    :param input: input of the function
+    :param create_graph: whether to create the graph of computation from the derivations (to compute e.g. the Hessian)
+    :return: transpose of the Jacobian of a multivariate function that outputed output for a given input
+
     """
-    # if the output is a scalar or gradient of a multivariate function if the output is a function
     output_basis = torch.eye(len(output))
     jac = torch.stack([torch.autograd.grad(output, input, output_coord, retain_graph=True, create_graph=create_graph)[0]
                        for output_coord in output_basis])
     return jac.t()
 
 
-def auto_multi_hess(output, input):
+def auto_multi_hess(output: torch.Tensor, input: torch.Tensor) -> torch.Tensor:
+    """
+    Compute hessian associated to a function given its output for a given input
+    :param output: output of a function for the given input
+    :param input: input used on the function
+    :return: hessian associated to a function given its output for a given input
+    """
     if output.grad_fn is None:
         hess = torch.zeros(input.shape[0], output.shape[0], output.shape[1])
     else:
@@ -21,7 +32,12 @@ def auto_multi_hess(output, input):
     return hess
 
 
-def define_smooth_relu(eps):
+def define_smooth_relu(eps: float) -> Callable:
+    """
+    Define a smooth version of the ReLU function with second order derivatives.
+    :param eps: precision of the smoothed approximation (how close the smooth version is from the original relu
+    :return: smooth version of the ReLU
+    """
     x1 = -eps
     y1 = torch.tensor(0.)
     x2 = eps

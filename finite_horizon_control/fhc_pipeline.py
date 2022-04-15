@@ -8,6 +8,9 @@ results_folder = os.path.join(results_folder, 'results')
 
 
 def solve_ctrl_pb(env_cfg, optim_cfg, prev_cmd=None, optim_aux_vars=None, past_metrics=None):
+    """
+    Overall pipeline to solve a given control problem
+    """
     env = make_env(env_cfg)
     cmd_opt, optim_aux_vars, metrics = run_min_algo(env, **optim_cfg,
                                                     prev_cmd=prev_cmd, optim_aux_vars=optim_aux_vars,

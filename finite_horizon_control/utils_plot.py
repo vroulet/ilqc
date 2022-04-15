@@ -96,12 +96,12 @@ def nice_ax(ax, x_axis, y_axis, logscale):
     return handles, labels
 
 
-def format_plot(fig, x_axis, y_axis, n_rows, n_cols):
+def format_plot(fig, add_legend):
     axes = fig.axes
     nice_writing = get_nice_writing()
     axs_handles = []
     axs_labels = []
-    for i, ax in enumerate(axes[n_rows:]):
+    for i, ax in enumerate(axes):
         handles, labels = ax.get_legend_handles_labels()
         for k, label in enumerate(labels):
             if nice_writing[label] not in axs_labels:
@@ -109,12 +109,18 @@ def format_plot(fig, x_axis, y_axis, n_rows, n_cols):
                 axs_labels.append(nice_writing[labels[k]])
         if ax.get_legend() is not None:
             ax.get_legend().remove()
+        x_axis = ax.xaxis.get_label().get_text()
         ax.set_xlabel(nice_writing[x_axis])
-        if i % n_cols == 0:
+        if i == 0:
+            y_axis = ax.yaxis.get_label().get_text()
             ax.set_ylabel(nice_writing[y_axis])
         else:
             ax.set(ylabel=None)
-    fig.legend(handles=axs_handles, labels=axs_labels, loc='center', bbox_to_anchor=(0.5, 0.02), ncol=len(axs_handles))
+    if add_legend:
+        fig.legend(handles=axs_handles, labels=axs_labels, loc='center',
+                   bbox_to_anchor=(0.5, 0.02), ncol=len(axs_handles))
+    fig.tight_layout()
+
 
 
 

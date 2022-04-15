@@ -1,11 +1,21 @@
 import torch
 import numpy as np
+from typing import List, Callable
 
+from envs.forward import DiffEnv
 from envs.rollout import roll_out_lin, roll_out_exact
 from envs.backward import lin_quad_backward, quad_backward_newton, quad_backward_ddp
 
 
-def gd_oracle(costs, cmd):
+def gd_oracle(costs: List[torch.Tensor], cmd: torch.Tensor) -> Callable:
+    """
+    Create an oracle that returns the gradient of the objective and the value of the minimum of the
+    associated subproblem
+    :param costs: costs computed for the given sequence of control
+    :param cmd: current sequence of controls
+    :return: oracle that, given a sequence of controls output a direction and the value of the minimum of the
+             associated subproblem
+    """
     val = sum(costs)
     grad = torch.autograd.grad(val, cmd)[0]
     fixed_obj = -0.5*torch.sum(grad*grad)
@@ -15,7 +25,20 @@ def gd_oracle(costs, cmd):
     return oracle
 
 
-def classic_oracle(traj, costs, approx='linquad', step_mode='reg_step', handle_bad_dir='flag'):
+def classic_oracle(traj: List[torch.Tensor], costs: List[torch.Tensor],
+                   approx: str = 'linquad', step_mode: str = 'reg_step', handle_bad_dir: str = 'flag') -> Callable:
+    """
+    Create an oracle that returns a Gauss-Newton or a Newton direction for the objective and the value of the
+    minimum of the associated subproblem
+    :param traj: trajectory associated to the current sequence of controls
+    :param costs: costs computed for the current sequence of controls
+    :param approx: type of approximation used to solve the associated subpb, i.e., 'linquad' for linear-quadratic for a
+                   Gauss-Newton step or 'quad' for a quadratic approximation for a Newton step
+    :param step_mode: move along a given direction ('dir') or use regularized steps ('reg')
+    :param handle_bad_dir: how to handle non-strongly convex objectives see envs.backward.bell_step
+    :return: oracle that, given a sequence of controls output a direction and the value of the minimum of the
+             associated subproblem
+    """
     if approx == 'linquad':
         backward = lin_quad_backward
     elif approx == 'quad':
@@ -49,7 +72,22 @@ def classic_oracle(traj, costs, approx='linquad', step_mode='reg_step', handle_b
     return oracle
 
 
-def ddp_oracle(env, traj, costs, cmd, approx, step_mode, handle_bad_dir):
+def ddp_oracle(env: DiffEnv, traj: List[torch.Tensor], costs: List[torch.Tensor], cmd: torch.Tensor,
+               approx: str = 'linquad', step_mode: str = 'reg_step', handle_bad_dir: str = 'flag') -> Callable:
+    """
+    Create an oracle that returns a direction computed by a differential dynamic programming approach with either o
+    linear-quadratic approximation of the costs or a quadratic approximation of the costs
+    :param env: nonlinear control problem environment
+    :param traj: trajectory associated to the current sequence of controls
+    :param costs: costs computed for the current sequence of controls
+    :param cmd: current sequence of controls of shape (horizon, dim_ctrl)
+    :param approx: type of approximation used to solve the associated subpb, i.e., 'linquad' for linear-quadratic for a
+                   Gauss-Newton step or 'quad' for a quadratic approximation for a Newton step
+    :param step_mode: move along a given direction ('dir') or use regularized steps ('reg')
+    :param handle_bad_dir: how to handle non-strongly convex objectives see envs.backward.bell_step
+    :return: oracle that, given a sequence of controls output a direction and the value of the minimum of the
+             associated subproblem
+    """
     if approx == 'linquad':
         backward = lin_quad_backward
     elif approx == 'quad':
@@ -86,7 +124,27 @@ def ddp_oracle(env, traj, costs, cmd, approx, step_mode, handle_bad_dir):
     return oracle
 
 
-def min_step(env, traj, costs, cmd, stepsize, line_search, algo, handle_bad_dir):
+def min_step(env: DiffEnv, traj: List[torch.Tensor], costs: List[torch.Tensor], cmd: torch.Tensor, stepsize: float,
+             line_search: bool, algo: str, handle_bad_dir: str) -> (torch.Tensor, List[torch.Tensor],
+                                                                    List[torch.Tensor], float):
+    """
+    One step of the given algorithm. Namely, given a sequence of controls, its associated trajectory and costs,
+    and a stepsize, return the next candidate sequence of controls with its associated trajectory and costs
+    and the stepsize used
+    :param env: nonlinear control problem
+    :param traj: trajectory associated to the current sequence of controls
+    :param costs: costs computed for the current sequence of controls
+    :param cmd: current sequence of controls of shape (horizon, dim_ctrl)
+    :param stepsize: fixed stepsize or current guess (if a linesearch is used)
+    :param line_search: whether to use a line search
+    :param algo: algorithm used (see algorithms.run_min_algo.check_nomenclature for the nomenclature of algo)
+    :param handle_bad_dir: how to handle non-strongly convex objectives see envs.backward.bell_step
+    :return:
+        - next_cmd -  next candidate sequence of controls
+        - traj - associated trajectory of the next candidate sequence of controls
+        - costs - associated costs of the next candidate sequence of controls
+        - stepsize - stepsize used to compute the next sequence of controls
+    """
     if algo == 'gd':
         oracle = gd_oracle(costs, cmd)
         approx = None
@@ -106,9 +164,12 @@ def min_step(env, traj, costs, cmd, stepsize, line_search, algo, handle_bad_dir)
 
     if line_search:
         if step_mode == 'dir':
+            # Move along a direction as in classical implementation of e.g. Gauss-Newton/Newton/DDP
             stepsize = 1.
             decrease_fac = 0.9
         elif step_mode == 'reg':
+            # Compute a regularized step see the companion report in papers/ilqc_algos
+            # Here scale the regularization by the current value of the gradient of the costs
             increase_fac = 8
             norm_grad_obj = torch.sqrt(sum([cost.grad_ctrl.dot(cost.grad_ctrl)
                                             + cost.grad_state.dot(cost.grad_state)
@@ -116,9 +177,12 @@ def min_step(env, traj, costs, cmd, stepsize, line_search, algo, handle_bad_dir)
             stepsize = increase_fac*stepsize/norm_grad_obj
             decrease_fac = 0.5
         elif step_mode == 'regvar':
+            # Compute a regularized step see the companion report in papers/ilqc_algos
+            # Here use some form of backtracking line-search without scaling
             stepsize *= 8
             decrease_fac = 0.5
         elif step_mode == 'dirvar':
+            # Move along a direction with some form of backtracking linesearch
             stepsize = min(4*stepsize, 1)
             decrease_fac = 0.9
         else:
@@ -136,7 +200,20 @@ def min_step(env, traj, costs, cmd, stepsize, line_search, algo, handle_bad_dir)
     return next_cmd, traj, costs, stepsize
 
 
-def bactrack_line_search(func, var, oracle, stepsize, decrease_fac):
+def bactrack_line_search(func: Callable, var: torch.Tensor, oracle: Callable, stepsize: float, decrease_fac: float)\
+                         -> (torch.Tensor, float):
+    """
+    Backtracking line search given an objective and a given oracle
+    :param func: objective to minimize
+    :param var: current candidate solution
+    :param oracle: oracle on the objective that returns a direction and a target value to reach for the backtracking
+                   linesearch see the companion report in papers/ilqc_algos.pdf
+    :param stepsize: initial guess for the stepsize
+    :param decrease_fac: factor to decrease the stepsize if the linsearch criterion is not met
+    :return:
+        - diff_var - candidate direction to update the sequence of controls, if no direction was found, ouput None
+        - stepsize - stepsize actually used
+    """
     dir = float(np.sign(stepsize))
 
     curr_val = func(var)
