@@ -96,17 +96,10 @@ def nice_ax(ax, x_axis, y_axis, logscale):
     return handles, labels
 
 
-def format_plot(fig, add_legend):
+def format_plot(fig, title, add_legend=False):
     axes = fig.axes
     nice_writing = get_nice_writing()
-    axs_handles = []
-    axs_labels = []
     for i, ax in enumerate(axes):
-        handles, labels = ax.get_legend_handles_labels()
-        for k, label in enumerate(labels):
-            if nice_writing[label] not in axs_labels:
-                axs_handles.append(ax.lines[k])
-                axs_labels.append(nice_writing[labels[k]])
         if ax.get_legend() is not None:
             ax.get_legend().remove()
         x_axis = ax.xaxis.get_label().get_text()
@@ -116,10 +109,14 @@ def format_plot(fig, add_legend):
             ax.set_ylabel(nice_writing[y_axis])
         else:
             ax.set(ylabel=None)
-    if add_legend:
-        fig.legend(handles=axs_handles, labels=axs_labels, loc='center',
-                   bbox_to_anchor=(0.5, 0.02), ncol=len(axs_handles))
+        ax.set(yscale='log')
+
+    fig.suptitle(title, y=1.)
     fig.tight_layout()
+    if add_legend:
+        handles, labels = axes[0].get_legend_handles_labels()
+        labels = [nice_writing[label] for label in labels]
+        fig.legend(handles=handles, labels=labels, loc='center', bbox_to_anchor=(0.5, 0.02), ncol=len(handles))
 
 
 def plot_conv_costs(info_exps, start_plot_after=0):

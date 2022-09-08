@@ -11,7 +11,6 @@ from matplotlib.patches import Polygon
 
 from envs.forward import DiffEnv
 from envs.discretization import euler, runge_kutta4, runge_kutta4_cst_ctrl
-from envs import rendering
 from envs.tracks.tracks import get_track
 from envs.torch_utils import smooth_relu
 
@@ -252,6 +251,8 @@ def define_colors():
 
 
 def set_window_viewer(min_x, max_x, min_y, max_y, border):
+    from envs import rendering
+
     light_green, orange, light_gray, dark_gray, dark_red, pastel_light_green, pastel_light_gray = define_colors()
 
     width, height = max_x - min_x + 2*border, max_y - min_y + 2*border
@@ -265,6 +266,8 @@ def set_window_viewer(min_x, max_x, min_y, max_y, border):
 
 
 def add_track_to_viewer(viewer, track, inner_track, outer_track, nb_points=500):
+    from envs import rendering
+
     light_green, orange, light_gray, dark_gray, dark_red, pastel_light_green, pastel_light_gray = define_colors()
 
     time = torch.linspace(0, max(track._t), nb_points)
@@ -293,6 +296,8 @@ def add_track_to_viewer(viewer, track, inner_track, outer_track, nb_points=500):
 
 
 def add_obstacle_to_viewer(viewer, point, radius):
+    from envs import rendering
+
     obstacle = rendering.make_circle(radius=math.sqrt(radius))
     translate = rendering.Transform()
     obstacle.add_attr(translate)
@@ -301,6 +306,8 @@ def add_obstacle_to_viewer(viewer, point, radius):
 
 
 def add_car_to_viewer(viewer, carlength, carwidth):
+    from envs import rendering
+
     light_green, orange, light_gray, dark_gray, dark_red, pastel_light_green, pastel_light_gray = define_colors()
 
     cartrans = rendering.Transform()

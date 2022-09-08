@@ -4,7 +4,6 @@ import torch
 from envs.forward import DiffEnv
 from envs.discretization import euler, runge_kutta4, runge_kutta4_cst_ctrl
 from envs.torch_utils import smooth_relu
-from envs import rendering
 
 
 class Pendulum(DiffEnv):
@@ -60,6 +59,8 @@ class Pendulum(DiffEnv):
         return self.state
 
     def set_viewer(self):
+        from envs import rendering
+
         l = 2 * self.l
         self.viewer = rendering.Viewer(500, 500)
         self.viewer.set_bounds(-1.5 * l, 1.5 * l, -1.5 * l, 1.5 * l)
@@ -157,6 +158,8 @@ class CartPendulum(DiffEnv):
         return cost_state
 
     def set_viewer(self):
+        from envs import rendering
+
         self.viewer = rendering.Viewer(500, 500)
         l = 2 * self.l
         if self.x_limits is not None:

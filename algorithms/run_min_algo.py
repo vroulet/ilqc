@@ -126,7 +126,7 @@ def check_linesearch_status(metrics: dict, verbose: bool = True) -> str:
     :return: status, i.e., 'running' or 'got_stuck'
     """
     status = 'running'
-    if metrics['stepsize'][-1] < 1e-20:
+    if metrics['stepsize'][-1] < 1e-24:
         status = 'got stuck'
         if verbose:
             print('{} got stuck in its linesearch'.format(metrics['algo'][0]))
@@ -146,7 +146,8 @@ def check_cost_status(metrics: dict, verbose: bool = True) -> str:
         if verbose:
             print('{0} diverged with a cost {1}'.format(metrics['algo'][0], metrics['cost'][-1]))
     if len(metrics['cost']) > 1:
-        if abs(metrics['cost'][-1] - metrics['cost'][-2])/abs(metrics['cost'][-2]) < 1e-6:
+        if abs(metrics['cost'][-1] - metrics['cost'][-2]) / abs(metrics['cost'][-2]) < 1e-12:
+        # if abs(metrics['cost'][-1] - metrics['cost'][-2])/abs(metrics['cost'][-2]) < 1e-6:
             status = 'converged'
             if verbose:
                 print('{0} converged in {1} iterations'.format(metrics['algo'][0], metrics['iteration'][-1]))
