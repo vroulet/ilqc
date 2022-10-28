@@ -17,7 +17,7 @@ from finite_horizon_control.utils_plot import nice_ax, get_nice_writing, set_plt
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 
-def compa_algos_env(env_cfg, optim_cfgs, x_axis, y_axis, plot=False, logscale=False):
+def compa_algos_env(env_cfg, optim_cfgs, x_axis, y_axis, plot=False, logscale=False, normalize=True):
     compa_optim = DataFrame()
     for optim_cfg in optim_cfgs:
         exp_outputs = solve_ctrl_pb_incrementally(env_cfg, optim_cfg)
@@ -26,8 +26,11 @@ def compa_algos_env(env_cfg, optim_cfgs, x_axis, y_axis, plot=False, logscale=Fa
 
     if y_axis == 'cost':
         min_info = min(compa_optim[y_axis])
-        aux = [(info - min_info + 1e-12) / (compa_optim[y_axis].to_list()[0] - min_info + 1e-12)
-               for info in compa_optim[y_axis]]
+        if normalize:
+            aux = [(info - min_info + 1e-12) / (compa_optim[y_axis].to_list()[0] - min_info + 1e-12)
+                   for info in compa_optim[y_axis]]
+        else:
+            aux = [info / compa_optim[y_axis].to_list()[0] for info in compa_optim[y_axis]]
         # if env_cfg['env'] == 'cart_pendulum' or env_cfg['env'] == 'simple_car':
         #     aux = [max(info, 1e-6) for info in aux]
         compa_optim[y_axis] = aux
@@ -152,7 +155,7 @@ def compa_algos_env_stepsizes(env_cfg, algos, horizons, max_iter, x_axis, y_axis
     return fig
 
 
-if __name__ == '__main__':
+def plot_conv_all_algos():
     env_cfgs = [
         dict(env='pendulum'),
         dict(env='cart_pendulum', x_limits=(-2., 2.), stay_put_time=0.6),
@@ -215,4 +218,109 @@ if __name__ == '__main__':
             # path = '/Users/vincentroulet/git_projects/vincent/ctrl/papers/techreport_arxiv2022/fig' \
             #        + '/{0}_{1}_{2}_{3}.pdf'.format(env_cfg['env'], approx, x_axis, y_axis)
             # fig.savefig(path, format='pdf', bbox_inches='tight')
+
+
+def plot_conv_gd_ilqr_iddp():
+    set_plt_params()
+
+    env_cfgs = [
+        dict(env='pendulum', reg_ctrl=0., horizon=100, dt=2./100),
+        dict(env='simple_car', track='simple', cost='exact', discretization='rk4', reg_bar=0., reg_ctrl=0.,
+             horizon=50, dt=2./50),
+    ]
+    max_iters = dict(pendulum=30, simple_car=500)
+    nice_writing = get_nice_writing(alternative=True)
+    palette, marker_styles = get_palette_line_styles()
+
+    x_axis, y_axis = 'iteration', 'cost'
+    approx, step_mode = 'linquad', 'reg'
+    algos = ['gd'] + [algo_type + '_' + approx + '_' + step_mode for algo_type in ['classic', 'ddp']]
+
+    fig, axs = plt.subplots(1, len(env_cfgs), figsize=(14, 7))
+    # fig, axs = plt.subplots(2, 1, figsize=(7, 12))
+
+    for i, env_cfg in enumerate(env_cfgs):
+        max_iter = max_iters[env_cfg['env']]
+        optim_cfgs = [dict(max_iter=max_iter, algo=algo) for algo in algos]
+        # fig = plt.figure()
+        compa_optim = compa_algos_env(env_cfg, optim_cfgs, x_axis, y_axis, plot=False, logscale=False, normalize=False)
+
+        sns.lineplot(x=x_axis, y=y_axis, hue='algo', style='algo', data=compa_optim,
+                     ax=axs[i],
+                     markers=marker_styles, dashes=False, palette=palette, markevery=int(max_iter/15))
+
+        axs[i].set(yscale='log')
+
+        handles, labels = axs[i].get_legend_handles_labels()
+        labels = [nice_writing[label] for label in labels]
+        axs[i].get_legend().remove()
+
+        x_axis = axs[i].xaxis.get_label().get_text()
+        axs[i].set_xlabel(nice_writing[x_axis])
+
+        y_axis = axs[i].yaxis.get_label().get_text()
+        axs[i].set_ylabel(nice_writing[y_axis])
+
+        axs[i].set_title(nice_writing[env_cfg['env']])
+
+    fig.legend(handles=handles, labels=labels, loc='center', bbox_to_anchor=(0.5, 0.),
+               ncol=len(handles))
+    fig.tight_layout()
+    fig.show()
+    path = '/Users/vincentroulet/git_projects/vincent/ctrl/papers/ilqc_jmlr2022/fig/simple_conv_example.pdf'
+
+    fig.savefig(path, format='pdf', bbox_inches='tight')
+
+
+def plot_conv_gd_ilqr_ddp_real_car():
+    set_plt_params()
+    nice_writing = get_nice_writing(alternative=True)
+    palette, marker_styles = get_palette_line_styles()
+
+    env_cfg = dict(env='real_car', track='simple', cost='exact', discretization='rk4', reg_bar=0., reg_ctrl=0.,
+                   horizon=50, dt=1. / 50)
+    approx, step_mode = 'linquad', 'reg'
+    max_iter = 200
+    algos = ['gd'] + [algo_type + '_' + approx + '_' + step_mode for algo_type in ['classic', 'ddp']]
+    optim_cfgs = [dict(max_iter=max_iter, algo=algo) for algo in algos]
+
+    x_axis, y_axis = 'iteration', 'cost'
+
+    compa_optim = compa_algos_env(env_cfg, optim_cfgs, x_axis, y_axis, plot=False, logscale=False, normalize=False)
+
+    compa_optim = compa_optim[compa_optim['iteration'] >= 1]
+
+    fig = plt.figure(figsize=(8, 7))
+
+    ax = sns.lineplot(x=x_axis, y=y_axis, hue='algo', style='algo', data=compa_optim,
+                      markers=marker_styles, dashes=False, palette=palette, markevery=int(max_iter / 15))
+
+    ax.set(yscale='log')
+
+    handles, labels = ax.get_legend_handles_labels()
+    labels = [nice_writing[label] for label in labels]
+    ax.get_legend().remove()
+
+    x_axis = ax.xaxis.get_label().get_text()
+    ax.set_xlabel(nice_writing[x_axis])
+
+    y_axis = ax.yaxis.get_label().get_text()
+    ax.set_ylabel(nice_writing[y_axis])
+
+    ax.set_title(nice_writing[env_cfg['env']])
+    # ax.locator_params(axis="y", numticks=2)
+    # ax._request_autoscale_view(tight=True)
+
+    fig.legend(handles=handles, labels=labels, loc='center', bbox_to_anchor=(0.5, 0.),
+               ncol=len(handles))
+    fig.tight_layout()
+    fig.show()
+    path = '/Users/vincentroulet/git_projects/vincent/ctrl/papers/ilqc_jmlr2022/fig/hard_conv_example.pdf'
+    fig.savefig(path, format='pdf', bbox_inches='tight')
+
+
+if __name__ == '__main__':
+    # plot_conv_all_algos()
+    plot_conv_gd_ilqr_iddp()
+    # plot_conv_gd_ilqr_ddp_real_car()
 

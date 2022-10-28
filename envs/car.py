@@ -54,7 +54,7 @@ class Car(DiffEnv):
         else:
             raise NotImplementedError
 
-        if self.discretization == 'RK4':
+        if self.discretization == 'rk4':
             self.dim_ctrl *= 3
 
         dir_name = os.path.dirname(os.path.abspath(__file__))
@@ -151,6 +151,10 @@ class Car(DiffEnv):
                 cost_next_state = cost_next_state + qVs*(vtref-self.vref)**2*self.dt**2
             else:
                 raise NotImplementedError
+
+            barr_next_state = self.barrier(next_state)
+            cost_next_state = cost_next_state + barr_next_state
+
         elif self.cost_type == 'exact':
             time = torch.tensor(time_iter*self.vref*self.dt)
             x_ref, y_ref = self.track.evaluate(time)
@@ -159,10 +163,10 @@ class Car(DiffEnv):
             raise NotImplementedError
 
         if type(self.reg_ctrl) == tuple:
-            if self.discretization in ['euler', 'RK4_cst_ctrl']:
+            if self.discretization in ['euler', 'rk4_cst_ctrl']:
                 a, delta, atref = ctrl
                 cost_ctrl = self.reg_ctrl[0]*(a**2 + delta**2) + self.reg_ctrl[1]*atref**2
-            elif self.discretization == 'RK4':
+            elif self.discretization == 'rk4':
                 accs, deltas, atrefs = ctrl[::3], ctrl[1::3], ctrl[2::3]
                 cost_ctrl = self.reg_ctrl[0]*((accs**2).sum() + (deltas**2).sum()) \
                             + self.reg_ctrl[1]*(atrefs**2).sum()
@@ -170,9 +174,6 @@ class Car(DiffEnv):
                 raise NotImplementedError
         else:
             cost_ctrl = self.reg_ctrl*ctrl.dot(ctrl)
-
-        barr_next_state = self.barrier(next_state)
-        cost_next_state = cost_next_state + barr_next_state
 
         return cost_next_state, cost_ctrl
 
@@ -197,7 +198,6 @@ class Car(DiffEnv):
                 # outer
                 barr_next_state = barr_next_state \
                                   + self.reg_bar * smooth_relu((point - border_point).dot(normal) + carwidth / 2) ** 2
-        barr_next_state = barr_next_state
 
         if self.reg_obs > 0.:
             barr_next_state = barr_next_state \

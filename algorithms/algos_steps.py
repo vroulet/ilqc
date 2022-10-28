@@ -63,7 +63,8 @@ def classic_oracle(traj: List[torch.Tensor], costs: List[torch.Tensor],
             return out
     elif step_mode in ['reg', 'regvar']:
         def oracle(stepsize):
-            reg = 1/stepsize if stepsize <= 1e6 else 0
+            reg = 1/stepsize
+            # if stepsize <= 1e6 else 0
             gains, opt_step, feasible = backward(traj, costs, reg, handle_bad_dir=handle_bad_dir)
             out = (roll_out_lin(traj, gains), opt_step) if feasible else (None, None)
             return out
@@ -110,7 +111,8 @@ def ddp_oracle(env: DiffEnv, traj: List[torch.Tensor], costs: List[torch.Tensor]
             return diff_cmd, dec_obj
     elif step_mode in ['reg', 'regvar']:
         def oracle(stepsize):
-            reg = 1/stepsize if stepsize <= 1e6 else 0
+            reg = 1/stepsize
+            # if stepsize <= 1e12 else 0
             gains, opt_step, feasible = backward(traj, costs, reg, handle_bad_dir=handle_bad_dir)
             out = (roll_out_exact(env, traj, gains, cmd, stepsize=1.), opt_step) if feasible else (None, None)
             return out

@@ -17,7 +17,7 @@ def set_plt_params():
     plt.rcParams.update(params)
 
 
-def get_nice_writing():
+def get_nice_writing(alternative=False):
     nice_writing = dict(iteration='Iterations', cost='Cost', stepsize='Stepsize', time='Time',
                         pendulum='Swinging up Pendulum',
                         cart_pendulum='Swinging up Pendulum on a Cart',
@@ -30,6 +30,12 @@ def get_nice_writing():
     nice_writing.update({algo + '_' + step_mode: algo_name + ' ' + step_mode_name
                          for (algo, algo_name) in algo_names.items()
                          for (step_mode, step_mode_name) in step_mode_names.items()})
+    if alternative:
+        nice_writing.update(classic_linquad_reg='ILQR', ddp_linquad_reg='IDDP')
+        nice_writing.update(simple_car='Simple Model of Car\nwith Tracking Cost')
+        nice_writing.update(real_car='Bicycle Model of Car\nwith Tracking Cost')
+        nice_writing.update(pendulum='Swinging up Pendulum\n')
+
     return nice_writing
 
 
@@ -45,9 +51,10 @@ def cmap_linestyles_ref():
 
 def get_palette_line_styles():
     algos_refs = [algo_type + '_' + approx + '_' + step_mode_name
-                  for algo_type in ['classic', 'ddp']
                   for approx in ['linquad', 'quad']
-                  for step_mode_name in ['dir', 'reg']]
+                  for algo_type in ['classic', 'ddp']
+                  for step_mode_name in ['dir', 'reg']
+                  ]
     cmap, marker_styles_list = cmap_linestyles_ref()
     palette = {key: value for key, value in zip(algos_refs, cmap)}
     palette.update({'gd': cmap[len(palette)]})
