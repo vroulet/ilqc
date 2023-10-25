@@ -18,7 +18,8 @@ def set_plt_params():
 
 
 def get_nice_writing(alternative=False):
-    nice_writing = dict(iteration='Iterations', cost='Cost', stepsize='Stepsize', time='Time',
+    nice_writing = dict(iteration='Iterations', cost='Cost', stepsize='Stepsize', time='Time', rate='Rate',
+                        min_sev_jac=r'$\sigma_{\min}(\nabla f^{[\tau]}(u^{(k)}))$',
                         pendulum='Swinging up Pendulum',
                         cart_pendulum='Swinging up Pendulum on a Cart',
                         simple_car='Simple Model of Car with Tracking Cost',
@@ -31,7 +32,7 @@ def get_nice_writing(alternative=False):
                          for (algo, algo_name) in algo_names.items()
                          for (step_mode, step_mode_name) in step_mode_names.items()})
     if alternative:
-        nice_writing.update(classic_linquad_reg='ILQR', ddp_linquad_reg='IDDP')
+        nice_writing.update(classic_linquad_reg='ILQR', ddp_linquad_reg='iLQR')
         nice_writing.update(simple_car='Simple Model of Car\nwith Tracking Cost')
         nice_writing.update(real_car='Bicycle Model of Car\nwith Tracking Cost')
         nice_writing.update(pendulum='Swinging up Pendulum\n')

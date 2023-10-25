@@ -1,17 +1,18 @@
 import torch
 import math
 import time
-from typing import List
+from typing import List, Tuple
 
 from envs.forward import DiffEnv
 from algorithms.algos_steps import min_step
 from utils_pipeline.optim_helpers import print_info_step
+from envs.torch_utils import auto_multi_grad
 
 
 def run_min_algo(env: DiffEnv, max_iter: int = 10, algo: str = 'ddp_linquad_reg', stepsize: float = None,
-                 line_search: bool = True, handle_bad_dir: str = 'flag',
+                 line_search: bool = True, handle_bad_dir: str = 'flag', compute_min_sev: bool = False,
                  prev_cmd: torch.Tensor = None, optim_aux_vars: dict = None,  past_metrics: dict = None)\
-                 -> (torch.Tensor, dict, dict):
+                 -> Tuple[torch.Tensor, dict, dict]:
     """
     Run a given nonlinear control algorithm for a given nonlinear control environment, outputs a candidate optimal
     sequence of controls, auxiliary variables to restart the optimization process and some metrics about the
@@ -35,7 +36,7 @@ def run_min_algo(env: DiffEnv, max_iter: int = 10, algo: str = 'ddp_linquad_reg'
     cmd = prev_cmd if prev_cmd is not None else torch.zeros(env.horizon, env.dim_ctrl)
     cmd.requires_grad = True
 
-    algo_type, approx, step_mode = check_nomenclature(algo)
+    _, approx, step_mode = check_nomenclature(algo)
 
     default_stepsize = 100. if 'reg' in step_mode else 1.
     if optim_aux_vars is not None:
@@ -45,7 +46,7 @@ def run_min_algo(env: DiffEnv, max_iter: int = 10, algo: str = 'ddp_linquad_reg'
 
     if past_metrics is None:
         traj, costs = env.forward(cmd, approx=approx)
-        metrics, iteration = collect_info(None, env, cmd, costs, 0, stepsize, algo, 0.), 0
+        metrics, iteration = collect_info(None, env, cmd, costs, 0, stepsize, algo, 0., compute_min_sev), 0
     else:
         traj, costs = env.forward(cmd, approx=approx)
         metrics, iteration = past_metrics, past_metrics['iteration'][-1]
@@ -57,7 +58,7 @@ def run_min_algo(env: DiffEnv, max_iter: int = 10, algo: str = 'ddp_linquad_reg'
                                               line_search, algo, handle_bad_dir)
         iteration += 1
         time_iter = time.time() - start_time
-        metrics = collect_info(metrics, env, cmd, costs, iteration, stepsize, algo, time_iter)
+        metrics = collect_info(metrics, env, cmd, costs, iteration, stepsize, algo, time_iter, compute_min_sev)
         status = check_cvg_status(metrics)
 
     cmd_opt = cmd.data if cmd is not None else None
@@ -65,8 +66,23 @@ def run_min_algo(env: DiffEnv, max_iter: int = 10, algo: str = 'ddp_linquad_reg'
     return cmd_opt, optim_aux_vars, metrics
 
 
+def compute_min_sing_eigval_jac(cmd, env):
+    cmd_shape = cmd.shape
+
+    flat_cmd = cmd.view(-1)
+    unflat_cmd = flat_cmd.view(*cmd_shape)
+    traj, _ = env.forward(unflat_cmd)
+    traj_ = torch.stack(traj[1:])
+    flat_traj = traj_.view(-1)
+
+    jac_t = auto_multi_grad(flat_traj, flat_cmd)
+
+    _, s, _ = torch.svd(jac_t.t().mm(jac_t)) 
+    return min(s).item()
+
+
 def collect_info(metrics: dict, env: DiffEnv, cmd: torch.Tensor, costs: List[torch.Tensor], iteration: int,
-                 stepsize: float, algo: str, time_iter: float) -> dict:
+                 stepsize: float, algo: str, time_iter: float, compute_min_sev: bool) -> dict:
     """
     Collect metric on the problem and add it to the current metrics
     :param metrics: metrics of the optimization process computed so far
@@ -92,9 +108,18 @@ def collect_info(metrics: dict, env: DiffEnv, cmd: torch.Tensor, costs: List[tor
         _, costs = env.forward(cmd)
         norm_grad_obj = torch.norm(torch.autograd.grad(sum(costs), cmd)[0])
 
-    info_step = dict(iteration=iteration, time=cumul_time + time_iter, cost=cost.item(),
-                     norm_grad_obj=norm_grad_obj.item(), stepsize=stepsize, algo=algo)
+    if compute_min_sev:
+      min_sev_jac = compute_min_sing_eigval_jac(cmd, env)
+
+    info_step = dict(iteration=iteration,
+                     time=cumul_time + time_iter,
+                     cost=cost.item(),
+                     norm_grad_obj=norm_grad_obj.item(), 
+                     stepsize=stepsize, algo=algo)
     format_types = ['int', 'time', 'scientific', 'scientific', 'scientific', 'string']
+    if compute_min_sev:
+        info_step.update(min_sev_jac=min_sev_jac)
+        format_types.append['scientific']
     print_info_step(info_step, format_types, iteration == 0)
 
     if metrics is None:
@@ -154,7 +179,7 @@ def check_cost_status(metrics: dict, verbose: bool = True) -> str:
     return status
 
 
-def check_nomenclature(algo: str) -> (str, str, str):
+def check_nomenclature(algo: str) -> Tuple[str, str, str]:
     """
     Check if the algorithm given in the input follows the syntax of the toolbox
     :param algo: given name of the algorithm

@@ -52,6 +52,8 @@ car racing with either a simplified model of a car or a bicycle model of a car. 
 ## Installation
 To install the dependencies, create a conda environment with
 ``conda env create -f ilqc.yml``
+Note that to visualize the environments, a specific version of pyglet needs to be installed, 
+due to backward incompatible changes done by pyglet.
 Activate the environment, using
 ``conda activate ilqc``
 and install pytorch (see https://pytorch.org/ to find the adequate command line for your OS); for example on a mac, do

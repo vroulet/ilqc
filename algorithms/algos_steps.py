@@ -64,7 +64,6 @@ def classic_oracle(traj: List[torch.Tensor], costs: List[torch.Tensor],
     elif step_mode in ['reg', 'regvar']:
         def oracle(stepsize):
             reg = 1/stepsize
-            # if stepsize <= 1e6 else 0
             gains, opt_step, feasible = backward(traj, costs, reg, handle_bad_dir=handle_bad_dir)
             out = (roll_out_lin(traj, gains), opt_step) if feasible else (None, None)
             return out

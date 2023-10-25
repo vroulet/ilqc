@@ -1,10 +1,10 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import torch
 
 
 def lin_quad_backward(traj: List[torch.Tensor], costs: List[torch.Tensor],
                       reg_ctrl: float = 0., reg_state: float = 0.,
-                      handle_bad_dir: str = 'flag') -> (List[Dict[str, torch.Tensor]], torch.Tensor, bool):
+                      handle_bad_dir: str = 'flag') -> Tuple[List[Dict[str, torch.Tensor]], torch.Tensor, bool]:
     """
     Compute optimal policies associated to the linear quadratic control problem approximating the environment at the
     current iteration using linear quadratic approximations. See the companion report of the toolbox (
@@ -45,7 +45,7 @@ def lin_quad_backward(traj: List[torch.Tensor], costs: List[torch.Tensor],
 
 def quad_backward(traj: List[torch.Tensor], costs: List[torch.Tensor], reg_ctrl: float = 0., reg_state: float = 0.,
                   handle_bad_dir: str = 'flag', mode: str = 'newton') \
-                  -> (List[Dict[str, torch.Tensor]], torch.Tensor, bool):
+                  -> Tuple[List[Dict[str, torch.Tensor]], torch.Tensor, bool]:
     """
     Compute optimal policies associated to the linear quadratic control problem approximating the environment at the
     current iteration using quadratic approximations. See the companion report of the toolbox (
@@ -105,8 +105,8 @@ def quad_backward_newton(traj, costs, reg_ctrl=0., reg_state=0., handle_bad_dir=
 
 def bell_step(A: torch.Tensor, B: torch.Tensor, J: torch.Tensor, j: torch.Tensor, jcst: torch.Tensor,
               P: torch.Tensor, p: torch.Tensor, Q: torch.Tensor, q: torch.Tensor, R: torch.Tensor = None,
-              handle_bad_dir: str ='flag') -> (torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor,
-                                               bool):
+              handle_bad_dir: str ='flag') -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor,
+                                               bool]:
     r"""
     Compute cost-to-go function associated to the linear quadratic control problem at a given time step. In other
     words, solve the Bellman equation associated to a linear quadratic control problem. Namely, given the cost-to-go
@@ -186,8 +186,8 @@ def bell_core(A, B, J, j, H, P, p, q, R=None):
     """
     if R is None:
         R = torch.zeros(p.shape[0], q.shape[0])
-    K = - torch.solve(R.t() + B.t().mm(J.mm(A)), H)[0]
-    k = - torch.solve((q + B.t().mv(j)).view(-1, 1), H)[0].view(-1)
+    K = - torch.linalg.solve(H, R.t() + B.t().mm(J.mm(A)))
+    k = - torch.linalg.solve(H, (q + B.t().mv(j)))
     next_J = P + A.t().mm(J.mm(A)) + (R + A.t().mm(J.mm(B))).mm(K)
     next_j = p + A.t().mv(j) + A.t().mv(J.mv(B.mv(k))) + R.mv(k)
     rest = 0.5 * (q + B.t().mv(j)).dot(k)

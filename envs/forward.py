@@ -1,6 +1,6 @@
 import torch
 import time
-from typing import Callable, List
+from typing import Callable, List, Tuple
 
 from torch.autograd import grad as auto_grad
 from envs.torch_utils import auto_multi_grad
@@ -32,7 +32,7 @@ class DiffEnv:
         """
         raise NotImplementedError
 
-    def costs(self, next_state: torch.Tensor, ctrl: torch.Tensor, time_iter: int) -> (torch.Tensor, torch.Tensor):
+    def costs(self, next_state: torch.Tensor, ctrl: torch.Tensor, time_iter: int) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Cost associated to the state that has just been computed and the cost associated to the applied control variable
         To be replaced by the given instance of the problem
@@ -45,7 +45,7 @@ class DiffEnv:
         """
         return torch.tensor(0.), torch.tensor(0.)
 
-    def step(self, ctrl: torch.Tensor, approx: str = None) -> (torch.Tensor, torch.Tensor):
+    def step(self, ctrl: torch.Tensor, approx: str = None) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Step of the environment, uses current state of the environment (treated as an attribute as in gym) and make
         one step.
@@ -75,7 +75,7 @@ class DiffEnv:
         return next_state, cost
 
     def forward(self, cmd: torch.Tensor, approx: str = None, reset: bool = True) \
-            -> (List[torch.Tensor], List[torch.Tensor]):
+            -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
         """
         Compute trajectories and costs associated to a sequence of control variables
         Can record first/second order information on dynamics/costs depending on the input approx (see function step)
