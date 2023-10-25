@@ -106,7 +106,7 @@ The experiments presented in [ilqc_algos](https://arxiv.org/abs/2207.06362) can 
   test, the results have been saved in advance. If you prefer to rerun all experiments simply erase the folder results.
 
 ## Contact
-You can report issues and ask questions in the repository's issues page. If you choose to send an email instead, please direct it to Vincent Roulet at vroulet@uw.edu and include [ilqc] in the subject line.
+You can report issues and ask questions in the repository's issues page. If you choose to send an email instead, please direct it to Vincent Roulet at vroulet@google.com and include [ilqc] in the subject line.
 
 
 #### Authors
