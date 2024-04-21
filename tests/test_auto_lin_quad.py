@@ -1,6 +1,11 @@
 from copy import deepcopy
+import sys
+import time
+
+sys.path.append('.')
 
 import torch
+from scipy.sparse.linalg import gmres, cg, bicgstab
 
 from envs.rollout import roll_out_lin
 from envs.backward import lin_quad_backward
@@ -35,10 +40,12 @@ def test_lqr(lin_quad_env: LinQuadEnv, reg_ctrl: float = 0.) -> None:
     else:
         cmd_opt_newton = cmd0 + cmd_opt_newton
     val_newton = total_cost0 + opt_newton
-    print('Solve by dynamic programming...')
 
+    print('Solve by dynamic programming...')
+    tic = time.time()
     gains, opt_dyn_prog, feasible = lin_quad_backward(traj, costs, reg_ctrl)
     cmd_opt_dyn_prog = roll_out_lin(traj, gains) if feasible else None
+    print(f'Time dynamic programming: {time.time() - tic}')
     if cmd_opt_dyn_prog is None:
         print('Dyn prog failed')
     else:
@@ -74,8 +81,15 @@ def direct_newton(env: DiffEnv, cmd: torch.Tensor, reg_ctrl: float = 0.) -> (tor
         # Get gradient, hessian, and make a newton step to get the solution
         grad = torch.autograd.grad(total_cost, cmd_flat, create_graph=True)[0]
         # add regularization in the hessian
+        tic = time.time()
         hess = auto_multi_grad(grad, cmd_flat) + reg_ctrl * torch.eye(dim_ctr * horizon)
-        cmd_opt_newton = - torch.solve(grad.unsqueeze(-1), hess)[0].view(-1)
+        cmd_opt_newton = - torch.linalg.solve(hess, grad.unsqueeze(-1), ).view(-1)
+        # hess = hess.detach().numpy()
+        # grad = grad.unsqueeze(-1).detach().numpy()
+        # cmd_opt_newton = cg(hess, grad)[0]
+        # cmd_opt_newton = - torch.from_numpy(cmd_opt_newton)
+        print(f'Time Newton: {time.time() - tic}')
+
         cmd_opt_newton = cmd_opt_newton.view(horizon, dim_ctr)
 
         traj, costs = env.forward(cmd_aux, approx='linquad')
@@ -107,7 +121,7 @@ def print_test(cmd_opt1: torch.Tensor, cmd_opt2: torch.Tensor, grad: torch.Tenso
 
 def test():
     reg_ctrl = 10
-    dim_state, dim_ctrl, horizon = 4, 3, 30
+    dim_state, dim_ctrl, horizon = 4, 4, 50
 
     lin_quad_env = make_synth_linear_env(horizon, dim_state, dim_ctrl)
     print('Linear quadratic control resolution')

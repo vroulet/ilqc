@@ -1,0 +1,5 @@
+matplotlib
+seaborn
+jupyter
+torch
+pyglet==1.5.27

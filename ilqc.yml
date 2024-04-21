@@ -8,6 +8,6 @@ dependencies:
   - python=3.8
   - matplotlib
   - seaborn
-  - pyglet=1.15.27
+  - pyglet=1.5.27
   - jupyter
   - torch
