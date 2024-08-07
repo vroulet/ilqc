@@ -1,19 +1,31 @@
-from typing import List
+"""Utilities to run experiments on a cluster."""
+
+from typing import Any, Union
+
 from utils_pipeline.record_exp import set_exp_cfg
-from utils_pipeline.grid_search_heatmap import build_grid_from_cfg, build_list_from_grid
+from utils_pipeline.grid_search_heatmap import (
+    build_grid_from_cfg,
+    build_list_from_grid,
+)
 
 
-def build_list_exp(exp_cfgs: List[dict]) -> list:
-    """
-    Exp_cfgs is a list of exp_cfg = [dict(data_cfg=..., model_cfg=..., optim_cfg=...), ...]
-    Each data_cfg, model_cfg, optim_cfg can have parameters that are list
-    For each exp_cfg, we form a list of all combinations of the parameters that are lists
-    This function returns a list of all possible configurations exp_cfg
-    :param exp_cfgs: [exp_cfg1, exp_cfg2, ...]
-                where each exp_cfg is of the form e.g. exp_cfg_i=(data_cfg=..., model_cfg=..., optim_cfg=...)
-                (each entry being a dictionary)
-                some entries of these dictionaries can be lists that are used to define a grid of parameters
-    :returns exp_cfgs_list: list of all possible configurations
+def build_list_exp(exp_cfgs: Union[list[dict[str, dict[str, Any]]], dict[str, dict[str, Any]]]) -> list:
+    """Build list of experiments to run.
+
+    Exp_cfgs is a list of exp_cfg = [dict(data_cfg=..., model_cfg=...,
+    optim_cfg=...), ...] Each data_cfg, model_cfg, optim_cfg can have parameters
+    that are list For each exp_cfg, we form a list of all combinations of the
+    parameters that are lists This function returns a list of all possible
+    configurations exp_cfg
+
+    Args:
+      exp_cfgs: [exp_cfg1, exp_cfg2, ...]
+                where each exp_cfg is of the form e.g. exp_cfg_i=(data_cfg=...,
+                model_cfg=..., optim_cfg=...) (each entry being a dictionary)
+                some entries of these dictionaries can be lists that are used to
+                define a grid of parameters
+    Returns:
+      exp_cfgs_list: list of all possible configurations
     """
     exp_cfgs_list = list()
     if not isinstance(exp_cfgs, list):
@@ -27,14 +39,24 @@ def build_list_exp(exp_cfgs: List[dict]) -> list:
     return exp_cfgs_list
 
 
-def slice_exp_cfgs_list(exp_cfgs_list: list, nb_slices: int = 999) -> List[list]:
-    """
+def slice_exp_cfgs_list(
+    exp_cfgs_list: list[dict[str, dict[str, Any]]], nb_slices: int = 999
+) -> list[list[dict[str, Any]]]:
+    """Slice a list of experiments configuration.
     Given a list, slice the list in nb_slices buckets that are approximately equal
-    :param exp_cfgs_list: list
-    :param nb_slices: number of slices
-    :return: slices: nb_slices slices of the list
+
+    Args:
+      exp_cfgs_list: list
+      nb_slices: number of slices
+
+    Returns:
+      slices: nb_slices slices of the list
     """
     k, m = divmod(len(exp_cfgs_list), nb_slices)
-    slices = list((exp_cfgs_list[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(nb_slices)))
+    slices = list(
+        (
+            exp_cfgs_list[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)]
+            for i in range(nb_slices)
+        )
+    )
     return slices
-

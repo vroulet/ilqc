@@ -1,14 +1,17 @@
+"""Utilities for optimization."""
+
 import datetime
-from typing import List
+from typing import Any
 
 
-def print_info_step(info_step: dict, format_types: List[str], print_header: bool = False) -> None:
-    """
-    Print information recorded in info steps with the formatting given in format_types
-    :param info_step: info recorded at the given optimization step such as dict(train_loss=..., test_acc=...,
-    iteration=...)
-    :param format_types: formatting for each of the entries such as ['scientific', 'float', 'int']
-    :param print_header: whether to print the header (i.e. the keys of info_step)
+def print_info_step(info_step: dict[str, Any], format_types: list[str], print_header: bool = False) -> None:
+    """Print information recorded in info steps with the formatting given in format_types.
+    
+    Args:
+      info_step: info recorded at the given optimization step such as dict(train_loss=..., test_acc=...,
+        iteration=...)
+      format_types: formatting for each of the entries such as ['scientific', 'float', 'int']
+      print_header: whether to print the header (i.e. the keys of info_step)
     """
     assert len(format_types) == len(info_step)
     keys, values = list(info_step.keys()), list(info_step.values())

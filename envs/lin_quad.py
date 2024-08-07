@@ -1,3 +1,4 @@
+"""Simple linear quadratic environment mostly for tests."""
 import torch
 
 from envs.forward import DiffEnv

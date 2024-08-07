@@ -1,16 +1,14 @@
-from copy import deepcopy
 import sys
 import time
 
 sys.path.append('.')
 
 import torch
-from scipy.sparse.linalg import gmres, cg, bicgstab
 
 from envs.rollout import roll_out_lin
 from envs.backward import lin_quad_backward
-from envs.lin_quad import LinQuadEnv, compute_lin_quad_approx, make_synth_linear_env, DiffEnv
-from envs.torch_utils import auto_multi_grad
+from envs.lin_quad import LinQuadEnv, make_synth_linear_env
+from tests.utils import direct_newton
 
 torch.set_default_tensor_type(torch.DoubleTensor)
 torch.manual_seed(1)
@@ -34,7 +32,9 @@ def test_lqr(lin_quad_env: LinQuadEnv, reg_ctrl: float = 0.) -> None:
     grad = torch.autograd.grad(total_cost0, cmd0, retain_graph=True)[0]
 
     print('Solve by Newton step...')
+    tic = time.time()
     cmd_opt_newton, opt_newton = direct_newton(lin_quad_env, cmd0, reg_ctrl)
+    print(f'Time Newton: {time.time() - tic}')
     if cmd_opt_newton is None:
         print('Newton step failed')
     else:
@@ -53,58 +53,6 @@ def test_lqr(lin_quad_env: LinQuadEnv, reg_ctrl: float = 0.) -> None:
     val_dyn_prog = total_cost0 + opt_dyn_prog
 
     print_test(cmd_opt_dyn_prog, cmd_opt_newton, grad, val_dyn_prog, val_newton)
-
-
-def direct_newton(env: DiffEnv, cmd: torch.Tensor, reg_ctrl: float = 0.) -> (torch.Tensor, torch.Tensor):
-    """
-    Compute a Newton step directly, used to test auto_lin_quad on linear quadratic problem.
-    :param env: control environment
-    :param cmd: initial command from where to do the Newton step
-    :param reg_ctrl: regularization on the control variables, i.e., the command
-    :return
-        - cmd_opt_newton - optimal command computed by a Newton step
-        - opt_newton - optimal value computed by a Newton step
-    """
-    horizon, dim_ctr = cmd.shape
-
-    # Compute step from a given command
-    cmd_flat = deepcopy(cmd.data)
-    cmd_flat = cmd_flat.view(-1)
-    cmd_flat.requires_grad = True
-    cmd_aux = cmd_flat.view(horizon, dim_ctr)
-
-    traj, costs = env.forward(cmd_aux, approx='linquad')
-    total_cost = sum(costs)
-    feasible = True
-
-    if feasible:
-        # Get gradient, hessian, and make a newton step to get the solution
-        grad = torch.autograd.grad(total_cost, cmd_flat, create_graph=True)[0]
-        # add regularization in the hessian
-        tic = time.time()
-        hess = auto_multi_grad(grad, cmd_flat) + reg_ctrl * torch.eye(dim_ctr * horizon)
-        cmd_opt_newton = - torch.linalg.solve(hess, grad.unsqueeze(-1), ).view(-1)
-        # hess = hess.detach().numpy()
-        # grad = grad.unsqueeze(-1).detach().numpy()
-        # cmd_opt_newton = cg(hess, grad)[0]
-        # cmd_opt_newton = - torch.from_numpy(cmd_opt_newton)
-        print(f'Time Newton: {time.time() - tic}')
-
-        cmd_opt_newton = cmd_opt_newton.view(horizon, dim_ctr)
-
-        traj, costs = env.forward(cmd_aux, approx='linquad')
-        lin_dyn_states, lin_dyn_ctrls, \
-        quad_cost_states, lin_cost_states, \
-        quad_cost_ctrls, lin_cost_ctrls = compute_lin_quad_approx(traj, costs, reg_ctrl)
-        lin_quad_env = LinQuadEnv(lin_dyn_states, lin_dyn_ctrls,
-                                  quad_cost_states, lin_cost_states,
-                                  quad_cost_ctrls, lin_cost_ctrls)
-        traj_opt, costs_opt = lin_quad_env.forward(cmd_opt_newton)
-        opt_newton = sum(costs_opt)
-    else:
-        cmd_opt_newton = None
-        opt_newton = None
-    return cmd_opt_newton, opt_newton
 
 
 def print_test(cmd_opt1: torch.Tensor, cmd_opt2: torch.Tensor, grad: torch.Tensor,

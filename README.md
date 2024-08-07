@@ -1,52 +1,42 @@
 # Iterative Linear Quadratic Control Toolbox
 The goal of this toolbox is to analyze empirically the optimization performance of several algorithms for nonlinear
- control from an optimization viewpoint on several synthetic benchmarks.
+control from an optimization viewpoint on several synthetic benchmarks.
 
-A companion report [ilqc_algos](https://arxiv.org/abs/2207.06362) is available and details the implementation of the algorithms
- in a common differentiable programming framework. A theoretical analysis of the algorithms under appropriate assumptions is presented in the manuscript [ilqc_theory](https://arxiv.org/abs/2204.02322).
-
-If this software is useful for your research, please consider citing it as
-
-```
-@article{roulet2022iterative,
-  title={Iterative Linear Quadratic Optimization for Nonlinear Control: Differentiable Programming Algorithmic Templates},
-  author={Roulet, Vincent and Srinivasa, Siddhartha and Fazel, Maryam and Harchaoui, Zaid},
-  journal={arXiv preprint arXiv:2207.06362},
-  year={2022}
-}
-```
+A companion report [ilqc_algos](https://arxiv.org/abs/2207.06362) 
+is available and details the implementation of the algorithms
+in a common differentiable programming framework. 
+A theoretical analysis of the algorithms under appropriate assumptions is presented in the manuscript 
+[ilqc_theory](https://arxiv.org/abs/2204.02322).
 
 ## Introduction
 Consider controlling a system such as a car to make it perform a task such as racing a track in a finite time. The
- movement of the system is generally determined by a *nonlinear* differential equation driven by a control input. To
-  determine an optimal control law for a given task determined by some costs, the system is usually discretized to
-   define an optimization problem in a sequence of control variables. The resulting optimization problem is generally
-    nonconvex, yet, experiments demonstrate that nonlinear control algorithms tailored for such problems can exhibit fast
-    convergence to reasonable or even optimal controllers. The objective of this toolbox is to study such phenomena.
+movement of the system is generally determined by a *nonlinear* differential equation driven by a control input. To
+determine an optimal control law for a given task determined by some costs, the system is usually discretized to
+define an optimization problem in a sequence of control variables. The resulting optimization problem is generally
+non-convex, yet, experiments demonstrate that nonlinear control algorithms tailored for such problems can exhibit fast
+convergence to reasonable or even optimal controllers. The objective of this toolbox is to study such phenomena.
 
 #### Algorithms
 Algorithms for discretized nonlinear control problems exploit the dynamical structure of the problem to compute
- candidate improved solutions at each step as detailed in [ilqc_algos](https://arxiv.org/abs/2207.06362). These algorithms can
-  be classified depending on the approximations they used on the problem at each iteration: linear/quadratic
-   approximations of the dynamics, linear/quadratic approximations of the costs. The algorithms we consider in this
-    toolbox are
+candidate improved solutions at each step as detailed in [ilqc_algos](https://arxiv.org/abs/2207.06362). These algorithms can
+be classified depending on the approximations they used on the problem at each iteration: linear/quadratic
+approximations of the dynamics, linear/quadratic approximations of the costs. The algorithms we consider in this
+toolbox are
 - a *gradient descent* (linear approx. of the dynamics, linear approx. of the costs),
-- a *Gauss-Newton* method and its *Differentiable Dynamic Programming (DDP) variant* (linear approx. of the dynamics
-, quadratic approx. of the costs),
+- a *Gauss-Newton* method and its *Differentiable Dynamic Programming (DDP) variant* (linear approx. of the dynamics,
+quadratic approx. of the costs),
 - a *Newton method* and its *DDP variant* (quadratic approx. of the dynamics, quadratic approx. of the costs).
 
 Furthermore, we consider several line-search strategies to update the current candidate solution (see [ilqc_algos
-](papers/ilqc_algos.pdf) for more details).
-
-In addition to the implementation of the above algorithms for finite-horizon control, we implemented a model
- predictive controller for autonomous car racing on different tracks.
+](papers/ilqc_algos.pdf) for more details). In addition to the implementation of the above algorithms for finite-horizon control,
+we implemented a model predictive controller for autonomous car racing on different tracks.
 
 #### Environments
-To study these algorithms we consider the task of swinging up a fixed pendulum or a pendulum on a cart and autonomous
-car racing with either a simplified model of a car or a bicycle model of a car. The latter is a model developed by
- [Liniger et al, 2017](https://arxiv.org/abs/1711.07300) by carefully studying the real dynamics of a miniature car,
- see e.g. this [video](https://www.youtube.com/watch?v=mXaElWYQKC4). We reimplemented these dynamics in Pytorch to
-  further study the numerical performance of optimization algorithms in realistic settings.
+To study these algorithms we consider the task of *swinging up a fixed pendulum* or a *pendulum on a cart* and *autonomous
+car racing* with either a *simplified model of a car* or a *bicycle model of a car*. The latter is a model developed by
+[Liniger et al, 2017](https://arxiv.org/abs/1711.07300) by carefully studying the real dynamics of a miniature car,
+see e.g. this [video](https://www.youtube.com/watch?v=mXaElWYQKC4). We reimplemented these dynamics in Pytorch to
+further study the numerical performance of optimization algorithms in realistic settings.
 
 
 ## Installation
@@ -63,11 +53,12 @@ and install pytorch (see https://pytorch.org/ to find the adequate command line 
 
 #### Finite horizon control
 To optimize for example the racing of a simple model of a car on a simpe track create a python file in the repository
- such as
- ```
-import torch
+such as
+```
+import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib import pyplot as plt
+import torch
+
 from envs.car import Car
 from algorithms.run_min_algo import run_min_algo
 
@@ -89,25 +80,43 @@ plt.show()
 ```
 
 A set of default experiments is present in `finite_horizon_control/fhc_example.py`. You can simply run the file from
- the root of the repository using `python finite_horizon_control/fhc_example.py` to observe optimal controllers for
-  the tasks decribed above.
+the root of the repository using `python finite_horizon_control/fhc_example.py` to observe optimal controllers for
+the tasks described above.
 
 #### Model predictive control
 To observe a controller computed by a model predicitve control approach run `python model_predictive_control/mpc_example.py`.
 
 ## Tutorials
 A set of notebooks is avaialble to describe the models considered for modeling autonomous car racing with different
- nonlinear control algorithms in `ilqc.ipynb`. To run them, simply type jupyter notebook from the root of the folder
-  after having activated the environment.
+nonlinear control algorithms in `ilqc.ipynb`. To run them, simply type jupyter notebook from the root of the folder
+after having activated the environment.
 
 ## Reproducing experiments
 The experiments presented in [ilqc_algos](https://arxiv.org/abs/2207.06362) can be reproduced by running `python
- finite_horizon_control/compa_algos.py`. Output figures are saved in the folder `finite_horizon_control`. For ease of
-  test, the results have been saved in advance. If you prefer to rerun all experiments simply erase the folder results.
+finite_horizon_control/compa_algos.py`. Output figures are saved in the folder `finite_horizon_control`. For ease of
+test, the results have been saved in advance. If you prefer to rerun all experiments simply erase the folder results.
 
 ## Contact
-You can report issues and ask questions in the repository's issues page. If you choose to send an email instead, please direct it to Vincent Roulet at vroulet@google.com and include [ilqc] in the subject line.
+You can report issues and ask questions in the repository's issues page.
+If you choose to send an email instead, please direct it to Vincent Roulet at [v][my_last_name]@google.com 
+and include [ilqc] in the subject line.
 
+## Reference
+If this software is useful for your research, please consider citing it as
+
+```
+@article{roulet2022iterative,
+  title={Iterative Linear Quadratic Optimization for Nonlinear Control: Differentiable Programming Algorithmic Templates},
+  author={Roulet, Vincent and Srinivasa, Siddhartha and Fazel, Maryam and Harchaoui, Zaid},
+  journal={arXiv preprint arXiv:2207.06362},
+  year={2022}
+}
+```
+
+You may also consider taking a look at the following packages:
+
+- [Trajax](https://github.com/google/trajax): Nonlinear control algorithms in JAX
+- [Aligator](https://github.com/Simple-Robotics/aligator): An efficient and versatile trajectory optimization library for robotics and beyond.
 
 #### Authors
 [Vincent Roulet](http://faculty.washington.edu/vroulet/)  

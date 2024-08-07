@@ -1,27 +1,34 @@
+"""Discretization methods."""
+
 from typing import Callable
 import torch
 
+Dyn = Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
 
-def euler(dyn: Callable, state: torch.Tensor, ctrl: torch.Tensor, dt: float) -> torch.Tensor:
-    """
-    Standard Euler step
-    :param dyn: continuous time dynamic, see e.g. the pendulum environment
-    :param state: state of the environment
-    :param ctrl: control variable applied
-    :param dt: time step
-    :return: next state of the system
+def euler(dyn: Dyn, state: torch.Tensor, ctrl: torch.Tensor, dt: float) -> torch.Tensor:
+    """Standard Euler step.
+   
+    Args:
+      dyn: continuous time dynamic, see e.g. the pendulum environment
+      state: state of the environment
+      ctrl: control variable applied
+      dt: time step
+
+    Returns: next state of the system
     """
     return state + dt*dyn(state, ctrl)
 
 
-def runge_kutta4(dyn: Callable, state: torch.Tensor, ctrl: torch.Tensor, dt: float) -> torch.Tensor:
-    """
-    Runge Kutta discretization with varying control inputs
-    :param dyn: continuous time dynamic, see e.g. the pendulum environment
-    :param state: state of the environment
-    :param ctrl: control variable applied
-    :param dt: time step
-    :return: next state of the system
+def runge_kutta4(dyn: Dyn, state: torch.Tensor, ctrl: torch.Tensor, dt: float) -> torch.Tensor:
+    """Runge Kutta discretization with varying control inputs.
+
+    Args:
+      dyn: continuous time dynamic, see e.g. the pendulum environment
+      state: state of the environment
+      ctrl: control variable applied
+      dt: time step
+
+    Returns: next state of the system
     """
 
     base_dim_ctrl = int(ctrl.shape[0]/3)
@@ -32,14 +39,16 @@ def runge_kutta4(dyn: Callable, state: torch.Tensor, ctrl: torch.Tensor, dt: flo
     return state + dt*(k1 + 2*k2 + 2*k3 + k4)/6
 
 
-def runge_kutta4_cst_ctrl(dyn: Callable, state: torch.Tensor, ctrl: torch.Tensor, dt: float) -> torch.Tensor:
-    """
-    Runge Kutta discretization with constant control input
-    :param dyn: continuous time dynamic, see e.g. the pendulum environment
-    :param state: state of the environment
-    :param ctrl: control variable applied
-    :param dt: time step
-    :return: next state of the system
+def runge_kutta4_cst_ctrl(dyn: Dyn, state: torch.Tensor, ctrl: torch.Tensor, dt: float) -> torch.Tensor:
+    """Runge Kutta discretization with constant control input.
+    
+    Args:
+      dyn: continuous time dynamic, see e.g. the pendulum environment
+      state: state of the environment
+      ctrl: control variable applied
+      dt: time step
+
+    Returns: next state of the system
     """
     k1 = dyn(state, ctrl)
     k2 = dyn(state + dt*k1/2, ctrl)
